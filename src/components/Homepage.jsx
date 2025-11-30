@@ -49,13 +49,13 @@ function Homepage({ onNavigateToSettings, onNavigateToMain }) {
                 </h3>
               </div>
               <p className="text-lg text-gray-300 mb-6">
-                Safety &amp; Stability Tools
+                Safety & Stability Tools
               </p>
               <ul className="space-y-4 text-lg">
                 <li className="flex items-start">
                   <span className="text-green-400 text-2xl mr-3 flex-shrink-0">✓</span>
                   <div>
-                    <span className="font-semibold text-white">Discreet &quot;Double-Tap to Exit&quot; Control</span>
+                    <span className="font-semibold text-white">Discreet "Double-Tap to Exit" Control</span>
                     <p className="text-gray-400 text-base mt-1">
                       Only caregivers know the quick double-tap exit gesture
                     </p>
@@ -64,7 +64,7 @@ function Homepage({ onNavigateToSettings, onNavigateToMain }) {
                 <li className="flex items-start">
                   <span className="text-green-400 text-2xl mr-3 flex-shrink-0">✓</span>
                   <div>
-                    <span className="font-semibold text-white">Use Your Device&apos;s &quot;Lock to App&quot; Feature</span>
+                    <span className="font-semibold text-white">Use Your Device's "Lock to App" Feature</span>
                     <p className="text-gray-400 text-base mt-1">
                       <strong>iOS:</strong> Settings → Accessibility → Guided Access<br />
                       <strong>Android:</strong> Settings → Security → App Pinning
@@ -193,15 +193,15 @@ function Homepage({ onNavigateToSettings, onNavigateToMain }) {
             <span>Simple, Stable Communication</span>
           </div>
           <div className="flex gap-6 text-gray-400">
-            <button className="hover:text-white transition-colors focus:outline-none focus:underline">
+            <span className="cursor-default" title="Coming soon">
               About
-            </button>
-            <button className="hover:text-white transition-colors focus:outline-none focus:underline">
+            </span>
+            <span className="cursor-default" title="Coming soon">
               Help
-            </button>
-            <button className="hover:text-white transition-colors focus:outline-none focus:underline">
+            </span>
+            <span className="cursor-default" title="Coming soon">
               Contact
-            </button>
+            </span>
           </div>
         </div>
       </footer>
