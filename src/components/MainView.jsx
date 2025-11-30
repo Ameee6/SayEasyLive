@@ -295,12 +295,12 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
           </button>
         </div>
 
-        {/* Right Panel - 2/3 width - Split into card area (3/4) and thumbnail sidebar (1/4) */}
+        {/* Right Panel - 2/3 width - Split into card area (~80%) and thumbnail sidebar (~20%) */}
         <div className="w-2/3 flex h-full">
-          {/* Card scroll area - 3/4 of right panel */}
+          {/* Card scroll area - ~80% of right panel */}
           <div
-            className="w-3/4 flex items-center justify-center overflow-hidden relative"
-            style={{ touchAction: 'none' }}
+            className="flex items-center justify-center overflow-hidden relative"
+            style={{ width: '80%', touchAction: 'none' }}
             onWheel={handleWheel}
           >
             {/* Animated card container using framer-motion */}
@@ -373,7 +373,7 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
           {/* Vertical dividing line */}
           <div className="w-1 bg-black" />
 
-          {/* Thumbnail sidebar - 1/4 of right panel */}
+          {/* Thumbnail sidebar - ~20% of right panel */}
           <ThumbnailSidebar 
             cards={cards} 
             currentIndex={currentIndex} 
@@ -418,16 +418,17 @@ function DoubleTapExit({ onExit }) {
 function ThumbnailSidebar({ cards, currentIndex, getCardColor }) {
   return (
     <div 
-      className="flex-1 flex flex-col items-center justify-center py-4 px-2 overflow-hidden"
+      className="flex flex-col items-center justify-center py-6 px-3 overflow-hidden"
       style={{ 
-        backgroundColor: '#f5f5f5',
+        width: '20%',
+        backgroundColor: '#f0f0f0',
         touchAction: 'none', // Not interactive - purely visual
         pointerEvents: 'none' // Prevent any interaction
       }}
       aria-hidden="true" // Hide from screen readers since it's purely visual
     >
-      {/* Vertically stacked thumbnails */}
-      <div className="flex flex-col gap-2 w-full max-h-full overflow-hidden">
+      {/* Vertically stacked thumbnails with generous spacing */}
+      <div className="flex flex-col gap-3 w-full max-h-full overflow-hidden">
         {cards.map((card, idx) => {
           const isActive = idx === currentIndex;
           const cardColor = getCardColor(idx);
@@ -437,19 +438,22 @@ function ThumbnailSidebar({ cards, currentIndex, getCardColor }) {
               key={idx}
               className={`
                 flex flex-col items-center justify-center
-                rounded-lg
-                transition-all duration-300 ease-in-out
-                ${isActive ? 'ring-4 ring-black ring-offset-2 scale-105' : 'opacity-70'}
+                rounded-xl
+                ${isActive ? 'active-thumbnail-highlight' : 'opacity-60'}
               `}
               style={{
-                border: `4px solid ${cardColor}`,
+                border: isActive ? `5px solid ${cardColor}` : `3px solid ${cardColor}`,
                 backgroundColor: isActive ? '#ffffff' : '#fafafa',
-                minHeight: '60px',
-                maxHeight: cards.length > THUMBNAIL_SIZE_BREAKPOINT ? '80px' : '100px',
+                minHeight: '50px',
+                maxHeight: cards.length > THUMBNAIL_SIZE_BREAKPOINT ? '90px' : '110px',
                 flex: '1 1 0',
                 boxShadow: isActive 
-                  ? '0 4px 12px rgba(0,0,0,0.3), inset 0 0 0 2px rgba(0,0,0,0.1)' 
+                  ? `0 0 20px 4px ${cardColor}, 0 0 40px 8px ${cardColor}80, 0 8px 24px rgba(0,0,0,0.4)` 
                   : '0 2px 4px rgba(0,0,0,0.1)',
+                transform: isActive ? 'scale(1.08)' : 'scale(1)',
+                transition: 'all 0.3s ease-in-out',
+                position: 'relative',
+                zIndex: isActive ? 10 : 1,
               }}
             >
               {/* Thumbnail emoji */}
