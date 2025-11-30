@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { speak } from '../utils/speech';
 import { defaultLeftButtons } from '../data/defaultCards';
 import { loadAllImages } from '../utils/imageStorage';
+import { enterFullscreen, exitFullscreen, isFullscreenSupported } from '../utils/fullscreen';
 
 // 7 distinct bright solid colors - no gradients (using hex values for reliability)
 const CARD_COLORS = [
@@ -136,6 +137,34 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
       if (wheelTimeoutRef.current) clearTimeout(wheelTimeoutRef.current);
     };
   }, [stopLongPress]);
+
+  // Request fullscreen mode on mount
+  // Note: Browser fullscreen requires user gesture on most platforms,
+  // so we set up a one-time click listener to enter fullscreen on first interaction
+  useEffect(() => {
+    // Only set up fullscreen handling if the API is supported
+    if (!isFullscreenSupported()) {
+      return;
+    }
+
+    const handleFirstInteraction = () => {
+      enterFullscreen();
+      document.removeEventListener('click', handleFirstInteraction);
+      document.removeEventListener('touchstart', handleFirstInteraction);
+    };
+
+    // Try to enter fullscreen immediately (works if already had user gesture)
+    enterFullscreen();
+    
+    // Also set up listeners for first interaction as fallback
+    document.addEventListener('click', handleFirstInteraction);
+    document.addEventListener('touchstart', handleFirstInteraction);
+
+    return () => {
+      document.removeEventListener('click', handleFirstInteraction);
+      document.removeEventListener('touchstart', handleFirstInteraction);
+    };
+  }, []);
 
   // Get card color by index, cycling through the palette
   const getCardColor = (index) => {
@@ -471,6 +500,8 @@ function DoubleTapExit({ onExit }) {
       modalTimeoutRef.current = null;
     }
     setShowModal(false);
+    // Exit fullscreen before returning to homepage
+    exitFullscreen();
     onExit();
   };
 
@@ -484,25 +515,39 @@ function DoubleTapExit({ onExit }) {
 
   return (
     <>
-      {/* Exit button - small, positioned in top left corner */}
-      <button
-        onClick={handleTap}
-        className="absolute top-4 left-4 z-50 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 active:bg-gray-900 border border-gray-600 shadow-md outline-none focus:outline-none"
-        style={{ 
-          fontSize: 'clamp(12px, 1.5vw, 16px)',
-          fontFamily: "'Quicksand', sans-serif",
-          fontWeight: 600,
-          opacity: 0.7
-        }}
-        aria-label="Double-tap to exit"
-      >
-        Exit
-      </button>
+      {/* Exit button area - small X and muted label, positioned in top left corner */}
+      <div className="absolute top-3 left-3 z-50 flex items-center gap-2">
+        {/* Small X button - smaller target */}
+        <button
+          onClick={handleTap}
+          className="w-8 h-8 flex items-center justify-center bg-gray-800/70 text-white rounded-md hover:bg-gray-700/80 active:bg-gray-900/80 border border-gray-600/50 shadow-sm outline-none focus:outline-none"
+          style={{ 
+            fontSize: '14px',
+            fontFamily: "'Quicksand', sans-serif",
+            fontWeight: 600,
+          }}
+          aria-label="Double-tap to exit"
+        >
+          ✕
+        </button>
+        {/* Muted small-text label - discreet */}
+        <span
+          className="text-white/40 select-none pointer-events-none"
+          style={{
+            fontSize: '11px',
+            fontFamily: "'Quicksand', sans-serif",
+            fontWeight: 500,
+            letterSpacing: '0.02em',
+          }}
+        >
+          Double tap to exit
+        </span>
+      </div>
 
       {/* Confirmation modal - appears in top left corner */}
       {showModal && (
         <div 
-          className="absolute top-16 left-4 z-50 bg-white rounded-xl shadow-2xl border-2 border-gray-300 p-4"
+          className="absolute top-14 left-3 z-50 bg-white rounded-xl shadow-2xl border-2 border-gray-300 p-4"
           style={{
             minWidth: '220px',
             maxWidth: '280px',
