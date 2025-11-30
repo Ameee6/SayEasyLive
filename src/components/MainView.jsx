@@ -166,7 +166,7 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
     
     wheelTimeoutRef.current = setTimeout(() => {
       wheelTimeoutRef.current = null;
-    }, 400); // Match the spring animation duration
+    }, 400); // Debounce prevents rapid successive wheel events
 
     if (e.deltaY > 0) {
       goToNextCard();
@@ -299,7 +299,7 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
           onWheel={handleWheel}
         >
           {/* Animated card container using framer-motion */}
-          <AnimatePresence initial={false} mode="popLayout" custom={direction}>
+          <AnimatePresence initial={false} mode="wait" custom={direction}>
             <motion.div
               key={currentIndex}
               custom={direction}
