@@ -18,6 +18,9 @@ const CARD_COLORS = [
 const YES_BUTTON_COLOR = '#00E676'; // Bright Lime Green
 const NO_BUTTON_COLOR = '#FF6D00';  // Bright Orange
 
+// Thumbnail sidebar configuration
+const THUMBNAIL_SIZE_BREAKPOINT = 7; // Cards above this threshold get smaller thumbnails
+
 // Long-press configuration
 const LONG_PRESS_THRESHOLD = 800; // 0.8 seconds
 const REPEAT_INTERVAL = 2000; // 2 seconds
@@ -442,7 +445,7 @@ function ThumbnailSidebar({ cards, currentIndex, getCardColor }) {
                 border: `4px solid ${cardColor}`,
                 backgroundColor: isActive ? '#ffffff' : '#fafafa',
                 minHeight: '60px',
-                maxHeight: cards.length > 7 ? '80px' : '100px',
+                maxHeight: cards.length > THUMBNAIL_SIZE_BREAKPOINT ? '80px' : '100px',
                 flex: '1 1 0',
                 boxShadow: isActive 
                   ? '0 4px 12px rgba(0,0,0,0.3), inset 0 0 0 2px rgba(0,0,0,0.1)' 
@@ -453,7 +456,7 @@ function ThumbnailSidebar({ cards, currentIndex, getCardColor }) {
               <div 
                 className="leading-none"
                 style={{ 
-                  fontSize: cards.length > 7 ? 'clamp(16px, 3vw, 28px)' : 'clamp(20px, 4vw, 36px)',
+                  fontSize: cards.length > THUMBNAIL_SIZE_BREAKPOINT ? 'clamp(16px, 3vw, 28px)' : 'clamp(20px, 4vw, 36px)',
                 }}
               >
                 {card.emoji}
@@ -466,7 +469,7 @@ function ThumbnailSidebar({ cards, currentIndex, getCardColor }) {
                   ${isActive ? 'text-black' : 'text-gray-600'}
                 `}
                 style={{ 
-                  fontSize: cards.length > 7 ? 'clamp(10px, 1.5vw, 14px)' : 'clamp(12px, 2vw, 18px)',
+                  fontSize: cards.length > THUMBNAIL_SIZE_BREAKPOINT ? 'clamp(10px, 1.5vw, 14px)' : 'clamp(12px, 2vw, 18px)',
                   fontFamily: "'Quicksand', sans-serif",
                   maxWidth: '100%',
                   overflow: 'hidden',
