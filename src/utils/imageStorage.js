@@ -185,14 +185,18 @@ export const fileToDataUrl = (file) => {
   });
 };
 
+// Default JPEG quality for resized images (0.85 balances quality vs file size)
+const DEFAULT_JPEG_QUALITY = 0.85;
+
 /**
  * Resize image to optimize storage
  * @param {string} dataUrl - Original image data URL
  * @param {number} maxWidth - Maximum width (default 400px for buttons)
  * @param {number} maxHeight - Maximum height (default 400px for buttons)
+ * @param {number} quality - JPEG quality 0-1 (default 0.85)
  * @returns {Promise<string>} Resized image data URL
  */
-export const resizeImage = (dataUrl, maxWidth = 400, maxHeight = 400) => {
+export const resizeImage = (dataUrl, maxWidth = 400, maxHeight = 400, quality = DEFAULT_JPEG_QUALITY) => {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => {
@@ -212,8 +216,8 @@ export const resizeImage = (dataUrl, maxWidth = 400, maxHeight = 400) => {
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, width, height);
 
-      // Convert to JPEG for smaller file size (quality 0.85)
-      resolve(canvas.toDataURL('image/jpeg', 0.85));
+      // Convert to JPEG for smaller file size
+      resolve(canvas.toDataURL('image/jpeg', quality));
     };
     img.onerror = () => resolve(dataUrl); // Return original on error
     img.src = dataUrl;

@@ -115,7 +115,9 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
     }
   }, []);
 
-  // Load images from IndexedDB on mount
+  // Load images from IndexedDB on mount.
+  // Separate from cleanup effect because this is an async data fetch operation,
+  // while the cleanup effect handles synchronous timer/interval cleanup.
   useEffect(() => {
     const loadImages = async () => {
       const allImages = await loadAllImages();

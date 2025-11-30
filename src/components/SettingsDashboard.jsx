@@ -149,11 +149,19 @@ function SettingsDashboard({ onSave, onBack }) {
     setTempSpeakText('');
   };
 
+  // Generate unique ID using crypto.randomUUID if available, fallback to timestamp+random
+  const generateUniqueId = () => {
+    if (typeof crypto !== 'undefined' && crypto.randomUUID) {
+      return `card-${crypto.randomUUID()}`;
+    }
+    return `card-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+  };
+
   // Add new card
   const addCard = () => {
     if (settings.scrollCards.length >= 10) return;
     
-    const newId = `card-${Date.now()}`;
+    const newId = generateUniqueId();
     const newCard = {
       id: newId,
       label: `Card ${settings.scrollCards.length + 1}`,
@@ -213,7 +221,7 @@ function SettingsDashboard({ onSave, onBack }) {
       const newCards = [...settings.scrollCards];
       for (let i = currentCount; i < count; i++) {
         newCards.push({
-          id: `card-${Date.now()}-${i}`,
+          id: generateUniqueId(),
           label: `Card ${i + 1}`,
           emoji: '😊',
           speakText: `Card ${i + 1}`,

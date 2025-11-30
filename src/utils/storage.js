@@ -4,7 +4,9 @@ const STORAGE_KEY = 'sayeasy_settings';
 const DASHBOARD_KEY = 'sayeasy_dashboard';
 const REMOVED_CARDS_KEY = 'sayeasy_removed_cards';
 
-// Default settings structure (legacy)
+// Legacy settings structure - preserved for backward compatibility with existing installations.
+// The old Settings.jsx component used this format. New installations use the dashboard format below.
+// This will be removed in a future version once all users have migrated to the dashboard.
 export const getDefaultSettings = () => ({
   mode: 'default', // 'default' or 'custom'
   voicePreference: 'neutral', // 'boy', 'girl', or 'neutral'
