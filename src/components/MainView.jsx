@@ -5,135 +5,119 @@ import { defaultLeftButtons } from '../data/defaultCards';
 function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, onExitFullscreen }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState(0); // Real-time drag position
   const [startY, setStartY] = useState(0);
-  const [currentY, setCurrentY] = useState(0);
-  const [slideDirection, setSlideDirection] = useState(null); // 'up' or 'down'
-  const dragThreshold = 50; // pixels to trigger flip
+  const snapThreshold = 80; // pixels to snap to next card
 
   const handleSpeak = (text) => {
     speak(text, voicePreference);
   };
 
-  // Touch/drag handlers for the rolodex
+  // Touch handlers - real-time following
   const handleTouchStart = (e) => {
-    e.preventDefault(); // Prevent iOS gestures
+    e.preventDefault();
     setIsDragging(true);
     setStartY(e.touches[0].clientY);
-    setCurrentY(e.touches[0].clientY);
   };
 
   const handleTouchMove = (e) => {
-    e.preventDefault(); // Prevent iOS gestures
+    e.preventDefault();
     if (!isDragging) return;
-    setCurrentY(e.touches[0].clientY);
+    const deltaY = e.touches[0].clientY - startY;
+    setDragOffset(deltaY);
   };
 
   const handleTouchEnd = (e) => {
-    e.preventDefault(); // Prevent iOS gestures
+    e.preventDefault();
     if (!isDragging) return;
 
-    const deltaY = startY - currentY;
-
-    if (Math.abs(deltaY) > dragThreshold) {
-      if (deltaY > 0) {
-        // Swipe up - next item
-        setSlideDirection('up');
-        setTimeout(() => {
-          setCurrentIndex((prev) => (prev + 1) % cards.length);
-          setSlideDirection(null);
-        }, 300);
-      } else {
-        // Swipe down - previous item
-        setSlideDirection('down');
-        setTimeout(() => {
-          setCurrentIndex((prev) => (prev - 1 + cards.length) % cards.length);
-          setSlideDirection(null);
-        }, 300);
-      }
+    // Determine which card to snap to
+    if (dragOffset > snapThreshold) {
+      // Dragged down - go to previous card
+      setCurrentIndex((prev) => (prev - 1 + cards.length) % cards.length);
+    } else if (dragOffset < -snapThreshold) {
+      // Dragged up - go to next card
+      setCurrentIndex((prev) => (prev + 1) % cards.length);
     }
 
     setIsDragging(false);
+    setDragOffset(0);
     setStartY(0);
-    setCurrentY(0);
   };
 
-  // Mouse handlers for desktop testing
+  // Mouse handlers - real-time following
   const handleMouseDown = (e) => {
     setIsDragging(true);
     setStartY(e.clientY);
-    setCurrentY(e.clientY);
   };
 
   const handleMouseMove = (e) => {
     if (!isDragging) return;
-    setCurrentY(e.clientY);
+    const deltaY = e.clientY - startY;
+    setDragOffset(deltaY);
   };
 
   const handleMouseUp = () => {
     if (!isDragging) return;
 
-    const deltaY = startY - currentY;
-
-    if (Math.abs(deltaY) > dragThreshold) {
-      if (deltaY > 0) {
-        setSlideDirection('up');
-        setTimeout(() => {
-          setCurrentIndex((prev) => (prev + 1) % cards.length);
-          setSlideDirection(null);
-        }, 300);
-      } else {
-        setSlideDirection('down');
-        setTimeout(() => {
-          setCurrentIndex((prev) => (prev - 1 + cards.length) % cards.length);
-          setSlideDirection(null);
-        }, 300);
-      }
+    // Determine which card to snap to
+    if (dragOffset > snapThreshold) {
+      setCurrentIndex((prev) => (prev - 1 + cards.length) % cards.length);
+    } else if (dragOffset < -snapThreshold) {
+      setCurrentIndex((prev) => (prev + 1) % cards.length);
     }
 
     setIsDragging(false);
+    setDragOffset(0);
     setStartY(0);
-    setCurrentY(0);
   };
 
-  // Wheel/scroll handler for desktop
+  // Wheel handler
   const handleWheel = (e) => {
     e.preventDefault();
-    if (slideDirection) return; // Prevent rapid scrolling during animation
+    if (isDragging) return;
 
     if (e.deltaY > 0) {
-      // Scroll down - next item
-      setSlideDirection('up');
-      setTimeout(() => {
-        setCurrentIndex((prev) => (prev + 1) % cards.length);
-        setSlideDirection(null);
-      }, 300);
+      setCurrentIndex((prev) => (prev + 1) % cards.length);
     } else if (e.deltaY < 0) {
-      // Scroll up - previous item
-      setSlideDirection('down');
-      setTimeout(() => {
-        setCurrentIndex((prev) => (prev - 1 + cards.length) % cards.length);
-        setSlideDirection(null);
-      }, 300);
+      setCurrentIndex((prev) => (prev - 1 + cards.length) % cards.length);
     }
   };
 
+  // Get current, previous, and next cards
   const currentCard = cards[currentIndex];
+  const prevCard = cards[(currentIndex - 1 + cards.length) % cards.length];
+  const nextCard = cards[(currentIndex + 1) % cards.length];
 
-  // Bright distinct colors for each card (TikTok-style)
-  const cardColors = [
-    'bg-purple-300',
-    'bg-pink-300',
-    'bg-blue-300',
-    'bg-yellow-300',
-    'bg-orange-300',
-    'bg-teal-300',
-    'bg-rose-300',
-    'bg-cyan-300',
-    'bg-lime-300',
-    'bg-fuchsia-300'
+  // Vibrant gradient backgrounds for each card
+  const cardGradients = [
+    'from-purple-400 to-pink-400',
+    'from-pink-400 to-rose-400',
+    'from-blue-400 to-cyan-400',
+    'from-yellow-300 to-orange-400',
+    'from-orange-400 to-red-400',
+    'from-teal-400 to-green-400',
+    'from-rose-400 to-pink-500',
+    'from-cyan-400 to-blue-500',
+    'from-lime-400 to-green-500',
+    'from-fuchsia-400 to-purple-500'
   ];
 
-  const cardColor = cardColors[currentIndex % cardColors.length];
+  // Background colors (lighter versions for panel background)
+  const bgColors = [
+    'bg-purple-200',
+    'bg-pink-200',
+    'bg-blue-200',
+    'bg-yellow-100',
+    'bg-orange-200',
+    'bg-teal-200',
+    'bg-rose-200',
+    'bg-cyan-200',
+    'bg-lime-200',
+    'bg-fuchsia-200'
+  ];
+
+  const bgColor = bgColors[currentIndex % bgColors.length];
 
   return (
     <div className="w-screen h-screen flex flex-col relative bg-white no-select" style={{ touchAction: 'none' }}>
@@ -169,9 +153,9 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
           </button>
         </div>
 
-        {/* Right Panel - 2/3 width - Card slider */}
+        {/* Right Panel - 2/3 width - Smooth scrolling cards */}
         <div
-          className={`w-2/3 flex items-center justify-center overflow-hidden relative transition-colors duration-500 ${cardColor}`}
+          className={`w-2/3 flex items-center justify-center overflow-hidden relative transition-colors duration-700 ${bgColor}`}
           style={{ touchAction: 'none' }}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
@@ -182,58 +166,88 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
           onMouseLeave={handleMouseUp}
           onWheel={handleWheel}
         >
-          {/* Card with slide animation */}
+          {/* Cards container - moves with drag */}
           <div
-            className={`flex flex-col items-center justify-center w-full h-full p-12 transition-transform duration-300 ease-out ${
-              slideDirection === 'up' ? '-translate-y-full opacity-0' :
-              slideDirection === 'down' ? 'translate-y-full opacity-0' :
-              'translate-y-0 opacity-100'
-            }`}
+            className="relative w-full h-full flex flex-col items-center justify-center"
+            style={{
+              transform: isDragging ? `translateY(${dragOffset}px)` : 'translateY(0)',
+              transition: isDragging ? 'none' : 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)'
+            }}
           >
-            {/* Picture frame card */}
-            <div className="bg-white rounded-3xl border-8 border-black shadow-2xl p-12 flex flex-col items-center max-w-3xl">
-
-              {/* Giant UP arrow */}
-              <div className="text-9xl font-black text-gray-700 mb-8 animate-bounce">
-                ↑
-              </div>
-
-              {/* Tappable emoji circle */}
-              <button
-                onClick={() => handleSpeak(currentCard.speakText)}
-                className="w-80 h-80 rounded-full bg-gradient-to-br from-white to-gray-100 border-8 border-black flex items-center justify-center outline-none focus:outline-none transform hover:scale-105 active:scale-95 transition-all shadow-xl mb-8"
-                style={{ touchAction: 'manipulation' }}
-              >
-                <div className="text-[16rem] leading-none">{currentCard.emoji}</div>
-              </button>
-
-              {/* Label/Title */}
-              <div className="text-8xl font-black text-black text-center mb-8 px-8">
-                {currentCard.label}
-              </div>
-
-              {/* Giant DOWN arrow */}
-              <div className="text-9xl font-black text-gray-700 mt-4 animate-bounce" style={{ animationDelay: '150ms' }}>
-                ↓
-              </div>
+            {/* Previous card (peeking from top) */}
+            <div
+              className="absolute top-0 opacity-30 scale-90"
+              style={{ transform: 'translateY(-85%)' }}
+            >
+              <Card card={prevCard} gradient={cardGradients[(currentIndex - 1 + cards.length) % cardGradients.length]} onSpeak={handleSpeak} isPeek />
             </div>
 
-            {/* Position dots */}
-            <div className="flex gap-4 mt-12">
-              {cards.map((_, idx) => (
-                <div
-                  key={idx}
-                  className={`w-6 h-6 rounded-full transition-all ${
-                    idx === currentIndex
-                      ? 'bg-black scale-150'
-                      : 'bg-gray-600 opacity-40'
-                  }`}
-                />
-              ))}
+            {/* Current card */}
+            <div className="relative z-10">
+              <Card card={currentCard} gradient={cardGradients[currentIndex % cardGradients.length]} onSpeak={handleSpeak} />
             </div>
+
+            {/* Next card (peeking from bottom) */}
+            <div
+              className="absolute bottom-0 opacity-30 scale-90"
+              style={{ transform: 'translateY(85%)' }}
+            >
+              <Card card={nextCard} gradient={cardGradients[(currentIndex + 1) % cardGradients.length]} onSpeak={handleSpeak} isPeek />
+            </div>
+          </div>
+
+          {/* Position dots */}
+          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-3 z-20">
+            {cards.map((_, idx) => (
+              <div
+                key={idx}
+                className={`rounded-full transition-all duration-300 ${
+                  idx === currentIndex
+                    ? 'w-8 h-8 bg-black scale-110'
+                    : 'w-6 h-6 bg-gray-700 opacity-50'
+                }`}
+              />
+            ))}
           </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+// Card component - modern, playful design
+function Card({ card, gradient, onSpeak, isPeek = false }) {
+  return (
+    <div className={`bg-gradient-to-br ${gradient} rounded-[3rem] shadow-2xl p-8 flex flex-col items-center w-[85vw] md:w-[50vw] max-w-2xl ${isPeek ? 'pointer-events-none' : ''}`}>
+
+      {/* UP arrow - smaller, cleaner */}
+      {!isPeek && (
+        <div className="text-6xl font-bold text-white/80 mb-6 drop-shadow-lg">
+          ↑
+        </div>
+      )}
+
+      {/* Tappable emoji button - HUGE */}
+      <button
+        onClick={() => !isPeek && onSpeak(card.speakText)}
+        className="w-72 h-72 md:w-80 md:h-80 rounded-full bg-white/90 backdrop-blur flex items-center justify-center outline-none focus:outline-none transform active:scale-95 transition-all shadow-2xl mb-8"
+        style={{ touchAction: 'manipulation' }}
+        disabled={isPeek}
+      >
+        <div className="text-[14rem] leading-none">{card.emoji}</div>
+      </button>
+
+      {/* Label - big and bold */}
+      <div className="text-7xl font-black text-white text-center mb-6 drop-shadow-lg px-6">
+        {card.label}
+      </div>
+
+      {/* DOWN arrow - smaller, cleaner */}
+      {!isPeek && (
+        <div className="text-6xl font-bold text-white/80 mt-2 drop-shadow-lg">
+          ↓
+        </div>
+      )}
     </div>
   );
 }
