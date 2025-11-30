@@ -55,7 +55,6 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
   const [dragOffset, setDragOffset] = useState(0); // Real-time drag position
   const [startY, setStartY] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
-  const [settleAnimating, setSettleAnimating] = useState(false); // For bounce animation
   const velocityRef = useRef(0);
   const lastTouchTimeRef = useRef(0);
   const lastTouchYRef = useRef(0);
@@ -70,7 +69,6 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
   const yesAnimationTimeoutRef = useRef(null);
   const noAnimationTimeoutRef = useRef(null);
   const cardAnimationTimeoutRef = useRef(null);
-  const settleAnimationTimeoutRef = useRef(null);
 
   // Long press handling refs
   const longPressTimerRef = useRef(null);
@@ -114,7 +112,6 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
       if (yesAnimationTimeoutRef.current) clearTimeout(yesAnimationTimeoutRef.current);
       if (noAnimationTimeoutRef.current) clearTimeout(noAnimationTimeoutRef.current);
       if (cardAnimationTimeoutRef.current) clearTimeout(cardAnimationTimeoutRef.current);
-      if (settleAnimationTimeoutRef.current) clearTimeout(settleAnimationTimeoutRef.current);
     };
   }, [stopLongPress]);
 
@@ -123,19 +120,12 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
     return CARD_COLORS[index % CARD_COLORS.length];
   };
 
-  // Helper to trigger settle animation with proper cleanup
+  // No-op function for settle animation (bounce animation removed for smooth 400ms transition)
   const triggerSettleAnimation = useCallback(() => {
-    if (settleAnimationTimeoutRef.current) {
-      clearTimeout(settleAnimationTimeoutRef.current);
-    }
-    setSettleAnimating(true);
-    settleAnimationTimeoutRef.current = setTimeout(() => {
-      setSettleAnimating(false);
-      settleAnimationTimeoutRef.current = null;
-    }, 800); // Match 800ms animation duration
+    // Intentionally empty - bounce animation removed
   }, []);
 
-  // Smooth momentum-based settle animation - soft, slow, gentle glide (800ms target)
+  // Smooth momentum-based settle animation - soft 400ms glide
   const animateSettle = (initialVelocity, initialOffset) => {
     const friction = 0.97; // High friction for gentle deceleration
     const minVelocity = 0.2; // Very low threshold for ultra-smooth stopping
@@ -423,10 +413,10 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
         >
           {/* Full-screen cards - one at a time, slides in/out - MUCH SLOWER transition */}
           <div
-            className={`absolute inset-0 w-full h-full ${settleAnimating ? 'settle-bounce' : ''}`}
+            className="absolute inset-0 w-full h-full"
             style={{
               transform: isDragging || isAnimating ? `translateY(${dragOffset}px)` : 'translateY(0)',
-              transition: isDragging || isAnimating ? 'none' : 'transform 800ms ease-in-out' // Soft, slow, gentle glide - 800ms constant easing
+              transition: isDragging || isAnimating ? 'none' : 'transform 400ms ease-out' // Soft, smooth 400ms glide with no snapback
             }}
           >
             {/* Previous card (above current) */}
