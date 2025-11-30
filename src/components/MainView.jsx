@@ -62,7 +62,7 @@ const LABEL_STYLE = {
   color: '#FFFFFF'
 };
 
-function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, onExitFullscreen }) {
+function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, onExit }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0); // -1 for up, 1 for down, 0 for initial
   const [images, setImages] = useState({}); // Images loaded from IndexedDB
@@ -249,7 +249,7 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
   return (
     <div className="w-screen h-screen flex flex-col relative bg-white no-select" style={{ touchAction: 'none' }}>
       {/* Double-tap to exit button */}
-      <DoubleTapExit onExit={onExitFullscreen} />
+      <DoubleTapExit onExit={onExit} />
 
       {/* Main content area */}
       <div className="flex flex-1 overflow-hidden">
@@ -431,32 +431,117 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
   );
 }
 
-// Double-tap to exit component
+// Double-tap to exit component with confirmation modal
 function DoubleTapExit({ onExit }) {
   const [lastTap, setLastTap] = useState(0);
+  const [showModal, setShowModal] = useState(false);
+  const modalTimeoutRef = useRef(null);
   const doubleTapDelay = 500; // milliseconds
+  const autoCloseDelay = 4000; // 4 seconds auto-cancel
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (modalTimeoutRef.current) {
+        clearTimeout(modalTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const handleTap = () => {
     const now = Date.now();
     if (now - lastTap < doubleTapDelay) {
-      // Double tap detected
-      onExit();
+      // Double tap detected - show confirmation modal
+      setShowModal(true);
+      // Set auto-close timeout
+      if (modalTimeoutRef.current) {
+        clearTimeout(modalTimeoutRef.current);
+      }
+      modalTimeoutRef.current = setTimeout(() => {
+        setShowModal(false);
+        modalTimeoutRef.current = null;
+      }, autoCloseDelay);
     }
     setLastTap(now);
   };
 
+  const handleConfirmExit = () => {
+    if (modalTimeoutRef.current) {
+      clearTimeout(modalTimeoutRef.current);
+      modalTimeoutRef.current = null;
+    }
+    setShowModal(false);
+    onExit();
+  };
+
+  const handleStay = () => {
+    if (modalTimeoutRef.current) {
+      clearTimeout(modalTimeoutRef.current);
+      modalTimeoutRef.current = null;
+    }
+    setShowModal(false);
+  };
+
   return (
-    <button
-      onClick={handleTap}
-      className="absolute top-4 right-4 z-50 px-6 py-4 bg-gray-800 text-white rounded-xl hover:bg-gray-700 active:bg-gray-900 border-2 border-gray-600 shadow-lg outline-none focus:outline-none"
-      style={{ 
-        fontSize: 'clamp(18px, 2vw, 24px)',
-        fontFamily: "'Quicksand', sans-serif",
-        fontWeight: 600
-      }}
-    >
-      Double-tap to exit
-    </button>
+    <>
+      {/* Exit button - small, positioned in top left corner */}
+      <button
+        onClick={handleTap}
+        className="absolute top-4 left-4 z-50 px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 active:bg-gray-900 border border-gray-600 shadow-md outline-none focus:outline-none"
+        style={{ 
+          fontSize: 'clamp(12px, 1.5vw, 16px)',
+          fontFamily: "'Quicksand', sans-serif",
+          fontWeight: 600,
+          opacity: 0.7
+        }}
+        aria-label="Double-tap to exit"
+      >
+        Exit
+      </button>
+
+      {/* Confirmation modal - appears in top left corner */}
+      {showModal && (
+        <div 
+          className="absolute top-16 left-4 z-50 bg-white rounded-xl shadow-2xl border-2 border-gray-300 p-4"
+          style={{
+            minWidth: '220px',
+            maxWidth: '280px',
+          }}
+        >
+          <p 
+            className="text-gray-800 font-semibold mb-4 text-center"
+            style={{ 
+              fontSize: 'clamp(14px, 2vw, 18px)',
+              fontFamily: "'Quicksand', sans-serif"
+            }}
+          >
+            Are you sure you want to exit?
+          </p>
+          <div className="flex gap-3 justify-center">
+            <button
+              onClick={handleConfirmExit}
+              className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 active:bg-red-700 font-semibold outline-none focus:outline-none"
+              style={{ 
+                fontSize: 'clamp(12px, 1.5vw, 16px)',
+                fontFamily: "'Quicksand', sans-serif"
+              }}
+            >
+              Confirm
+            </button>
+            <button
+              onClick={handleStay}
+              className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 active:bg-green-700 font-semibold outline-none focus:outline-none"
+              style={{ 
+                fontSize: 'clamp(12px, 1.5vw, 16px)',
+                fontFamily: "'Quicksand', sans-serif"
+              }}
+            >
+              Stay
+            </button>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

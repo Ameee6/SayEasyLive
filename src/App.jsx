@@ -23,72 +23,16 @@ function App() {
     return dashboardSettings.mainButtons;
   };
 
-  // Handle entering fullscreen
-  const enterFullscreen = () => {
-    const elem = document.documentElement;
-
-    if (elem.requestFullscreen) {
-      elem.requestFullscreen().catch(() => {});
-    } else if (elem.webkitRequestFullscreen) {
-      elem.webkitRequestFullscreen();
-    } else if (elem.mozRequestFullScreen) {
-      elem.mozRequestFullScreen();
-    } else if (elem.msRequestFullscreen) {
-      elem.msRequestFullscreen();
-    }
-  };
-
-  // Handle exiting fullscreen
-  const exitFullscreen = () => {
-    if (document.exitFullscreen) {
-      document.exitFullscreen().catch(() => {});
-    } else if (document.webkitExitFullscreen) {
-      document.webkitExitFullscreen();
-    } else if (document.mozCancelFullScreen) {
-      document.mozCancelFullScreen();
-    } else if (document.msExitFullscreen) {
-      document.msExitFullscreen();
-    }
-
-    // Return to homepage after exiting fullscreen
+  // Handle exiting from main view to homepage
+  const handleExitToHome = () => {
     setCurrentView('home');
   };
-
-  // Listen for fullscreen changes (e.g., user pressing ESC)
-  useEffect(() => {
-    const handleFullscreenChange = () => {
-      const isCurrentlyFullscreen = !!(
-        document.fullscreenElement ||
-        document.webkitFullscreenElement ||
-        document.mozFullScreenElement ||
-        document.msFullscreenElement
-      );
-
-      if (!isCurrentlyFullscreen && currentView === 'main') {
-        setCurrentView('home');
-      }
-    };
-
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-    document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-    document.addEventListener('MSFullscreenChange', handleFullscreenChange);
-
-    return () => {
-      document.removeEventListener('fullscreenchange', handleFullscreenChange);
-      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
-      document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
-    };
-  }, [currentView]);
 
   // Handle saving settings from dashboard
   const handleSaveSettings = (newSettings) => {
     setDashboardSettings(newSettings);
     saveDashboardSettings(newSettings);
     setCurrentView('main');
-    // Enter fullscreen when returning to main view
-    setTimeout(enterFullscreen, 100);
   };
 
   // Handle going back from settings to homepage
@@ -104,7 +48,6 @@ function App() {
   // Handle navigation from homepage to main communication app
   const handleNavigateToMain = () => {
     setCurrentView('main');
-    setTimeout(enterFullscreen, 100);
   };
 
   // Render appropriate view
@@ -131,7 +74,7 @@ function App() {
       cards={getCards()}
       leftButtons={getLeftButtons()}
       voicePreference={dashboardSettings.voicePreference}
-      onExitFullscreen={exitFullscreen}
+      onExit={handleExitToHome}
     />
   );
 }
