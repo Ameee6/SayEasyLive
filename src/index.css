@@ -59,10 +59,39 @@ html, body {
   75% { transform: scale(1.04); }
 }
 
+/* Dramatic glow pulse animation for active thumbnail */
+@keyframes glowPulse {
+  0%, 100% { 
+    filter: brightness(1);
+  }
+  50% { 
+    filter: brightness(1.15);
+  }
+}
+
+/* Animated border pulse for active thumbnail */
+@keyframes borderPulse {
+  0%, 100% {
+    outline-offset: 0px;
+    outline-width: 3px;
+  }
+  50% {
+    outline-offset: 2px;
+    outline-width: 4px;
+  }
+}
+
 .spin-on-press {
   animation: funSpin 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .bounce-on-press {
   animation: funBounce 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Active thumbnail highlight with glow animation */
+.active-thumbnail-highlight {
+  animation: glowPulse 1.5s ease-in-out infinite, borderPulse 1.5s ease-in-out infinite;
+  outline-style: solid;
+  outline-color: rgba(255, 255, 255, 0.9);
 }
