@@ -24,6 +24,29 @@ const FRAME_RATE_NORMALIZATION = 16;
 const LONG_PRESS_THRESHOLD = 800; // 0.8 seconds
 const REPEAT_INTERVAL = 2000; // 2 seconds
 
+// Shared sizing constants for accessibility
+const YES_NO_BUTTON_STYLE = {
+  width: 'min(32vw, 42vh)',
+  height: 'min(32vw, 42vh)',
+  minWidth: '220px',
+  minHeight: '220px',
+  touchAction: 'manipulation',
+};
+
+const CARD_EMOJI_BUTTON_STYLE = {
+  width: 'min(50vw, 480px)',
+  height: 'min(50vw, 480px)',
+  minWidth: '280px',
+  minHeight: '280px',
+  touchAction: 'manipulation',
+};
+
+const LABEL_STYLE = {
+  fontFamily: "'Quicksand', sans-serif",
+  textShadow: '4px 4px 8px rgba(0,0,0,0.4)',
+  color: '#FFFFFF'
+};
+
 function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, onExitFullscreen }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -41,6 +64,12 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
   const [noButtonAnimating, setNoButtonAnimating] = useState(false);
   const [cardButtonAnimating, setCardButtonAnimating] = useState(false);
 
+  // Refs for animation timeouts to prevent memory leaks
+  const yesAnimationTimeoutRef = useRef(null);
+  const noAnimationTimeoutRef = useRef(null);
+  const cardAnimationTimeoutRef = useRef(null);
+  const settleAnimationTimeoutRef = useRef(null);
+
   // Long press handling refs
   const longPressTimerRef = useRef(null);
   const repeatIntervalRef = useRef(null);
@@ -57,6 +86,7 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
 
     // Start long press timer
     longPressTimerRef.current = setTimeout(() => {
+      longPressTimerRef.current = null;
       // Start repeating voice every 2 seconds
       repeatIntervalRef.current = setInterval(() => {
         handleSpeak(text);
@@ -75,10 +105,14 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
     }
   }, []);
 
-  // Cleanup on unmount
+  // Cleanup all timeouts/intervals on unmount
   useEffect(() => {
     return () => {
       stopLongPress();
+      if (yesAnimationTimeoutRef.current) clearTimeout(yesAnimationTimeoutRef.current);
+      if (noAnimationTimeoutRef.current) clearTimeout(noAnimationTimeoutRef.current);
+      if (cardAnimationTimeoutRef.current) clearTimeout(cardAnimationTimeoutRef.current);
+      if (settleAnimationTimeoutRef.current) clearTimeout(settleAnimationTimeoutRef.current);
     };
   }, [stopLongPress]);
 
@@ -86,6 +120,18 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
   const getCardColor = (index) => {
     return CARD_COLORS[index % CARD_COLORS.length];
   };
+
+  // Helper to trigger settle animation with proper cleanup
+  const triggerSettleAnimation = useCallback(() => {
+    if (settleAnimationTimeoutRef.current) {
+      clearTimeout(settleAnimationTimeoutRef.current);
+    }
+    setSettleAnimating(true);
+    settleAnimationTimeoutRef.current = setTimeout(() => {
+      setSettleAnimating(false);
+      settleAnimationTimeoutRef.current = null;
+    }, 600);
+  }, []);
 
   // Smooth momentum-based settle animation - MUCH SLOWER (2-3x)
   const animateSettle = (initialVelocity, initialOffset) => {
@@ -113,9 +159,7 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
         setCurrentIndex(targetIndex);
         setDragOffset(0);
         setIsAnimating(false);
-        // Trigger settle bounce animation
-        setSettleAnimating(true);
-        setTimeout(() => setSettleAnimating(false), 600);
+        triggerSettleAnimation();
         return;
       }
       
@@ -124,15 +168,13 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
         setCurrentIndex((prev) => (prev - 1 + cards.length) % cards.length);
         setDragOffset(0);
         setIsAnimating(false);
-        setSettleAnimating(true);
-        setTimeout(() => setSettleAnimating(false), 600);
+        triggerSettleAnimation();
         return;
       } else if (offset < -cardHeight * 0.5) {
         setCurrentIndex((prev) => (prev + 1) % cards.length);
         setDragOffset(0);
         setIsAnimating(false);
-        setSettleAnimating(true);
-        setTimeout(() => setSettleAnimating(false), 600);
+        triggerSettleAnimation();
         return;
       }
       
@@ -238,12 +280,10 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
 
     if (e.deltaY > 0) {
       setCurrentIndex((prev) => (prev + 1) % cards.length);
-      setSettleAnimating(true);
-      setTimeout(() => setSettleAnimating(false), 600);
+      triggerSettleAnimation();
     } else if (e.deltaY < 0) {
       setCurrentIndex((prev) => (prev - 1 + cards.length) % cards.length);
-      setSettleAnimating(true);
-      setTimeout(() => setSettleAnimating(false), 600);
+      triggerSettleAnimation();
     }
   };
 
@@ -255,8 +295,12 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
   // Yes button handlers with animation and long-press
   const handleYesPress = () => {
     handleSpeak(leftButtons.top.speakText);
+    if (yesAnimationTimeoutRef.current) clearTimeout(yesAnimationTimeoutRef.current);
     setYesButtonAnimating(true);
-    setTimeout(() => setYesButtonAnimating(false), 800);
+    yesAnimationTimeoutRef.current = setTimeout(() => {
+      setYesButtonAnimating(false);
+      yesAnimationTimeoutRef.current = null;
+    }, 800);
     startLongPress(leftButtons.top.speakText);
   };
 
@@ -267,8 +311,12 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
   // No button handlers with animation and long-press
   const handleNoPress = () => {
     handleSpeak(leftButtons.bottom.speakText);
+    if (noAnimationTimeoutRef.current) clearTimeout(noAnimationTimeoutRef.current);
     setNoButtonAnimating(true);
-    setTimeout(() => setNoButtonAnimating(false), 800);
+    noAnimationTimeoutRef.current = setTimeout(() => {
+      setNoButtonAnimating(false);
+      noAnimationTimeoutRef.current = null;
+    }, 800);
     startLongPress(leftButtons.bottom.speakText);
   };
 
@@ -279,8 +327,12 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
   // Card button handlers with animation and long-press
   const handleCardPress = () => {
     handleSpeak(currentCard.speakText);
+    if (cardAnimationTimeoutRef.current) clearTimeout(cardAnimationTimeoutRef.current);
     setCardButtonAnimating(true);
-    setTimeout(() => setCardButtonAnimating(false), 500);
+    cardAnimationTimeoutRef.current = setTimeout(() => {
+      setCardButtonAnimating(false);
+      cardAnimationTimeoutRef.current = null;
+    }, 500);
     startLongPress(currentCard.speakText);
   };
 
@@ -308,20 +360,16 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
             onTouchEnd={handleYesRelease}
             className={`flex flex-col items-center justify-center rounded-full outline-none focus:outline-none shadow-2xl border-8 border-white/40 overflow-hidden ${yesButtonAnimating ? 'spin-on-press' : ''}`}
             style={{
-              width: 'min(32vw, 42vh)',
-              height: 'min(32vw, 42vh)',
-              minWidth: '220px',
-              minHeight: '220px',
+              ...YES_NO_BUTTON_STYLE,
               backgroundColor: YES_BUTTON_COLOR,
-              touchAction: 'manipulation',
             }}
           >
             <div style={{ fontSize: 'min(14vw, 7vh)', lineHeight: 1 }}>{leftButtons.top.emoji}</div>
             <div 
-              className="font-bold text-white text-center leading-tight mt-1"
+              className="font-bold text-center leading-tight mt-1"
               style={{ 
                 fontSize: 'clamp(36px, 5vw, 72px)',
-                fontFamily: "'Quicksand', sans-serif",
+                ...LABEL_STYLE,
                 textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
               }}
             >
@@ -338,20 +386,16 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
             onTouchEnd={handleNoRelease}
             className={`flex flex-col items-center justify-center rounded-full outline-none focus:outline-none shadow-2xl border-8 border-white/40 overflow-hidden ${noButtonAnimating ? 'spin-on-press' : ''}`}
             style={{
-              width: 'min(32vw, 42vh)',
-              height: 'min(32vw, 42vh)',
-              minWidth: '220px',
-              minHeight: '220px',
+              ...YES_NO_BUTTON_STYLE,
               backgroundColor: NO_BUTTON_COLOR,
-              touchAction: 'manipulation',
             }}
           >
             <div style={{ fontSize: 'min(14vw, 7vh)', lineHeight: 1 }}>{leftButtons.bottom.emoji}</div>
             <div 
-              className="font-bold text-white text-center leading-tight mt-1"
+              className="font-bold text-center leading-tight mt-1"
               style={{ 
                 fontSize: 'clamp(36px, 5vw, 72px)',
-                fontFamily: "'Quicksand', sans-serif",
+                ...LABEL_STYLE,
                 textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
               }}
             >
@@ -386,12 +430,7 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
                  style={{ transform: 'translateY(-100%)', backgroundColor: getCardColor((currentIndex - 1 + cards.length) % cards.length) }}>
               <button 
                 className="rounded-full bg-white/95 backdrop-blur flex items-center justify-center shadow-2xl pointer-events-none border-8 border-black/20 overflow-hidden"
-                style={{ 
-                  width: 'min(50vw, 480px)', 
-                  height: 'min(50vw, 480px)',
-                  minWidth: '280px',
-                  minHeight: '280px'
-                }}
+                style={CARD_EMOJI_BUTTON_STYLE}
               >
                 <div style={{ fontSize: 'min(28vw, 14rem)', lineHeight: 1 }}>{prevCard.emoji}</div>
               </button>
@@ -399,9 +438,7 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
                 className="font-bold text-center px-4 my-6"
                 style={{ 
                   fontSize: 'clamp(48px, 12vw, 144px)',
-                  fontFamily: "'Quicksand', sans-serif",
-                  textShadow: '4px 4px 8px rgba(0,0,0,0.4)',
-                  color: '#FFFFFF'
+                  ...LABEL_STYLE
                 }}
               >
                 {prevCard.label}
@@ -420,13 +457,7 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
                 onTouchStart={handleCardPress}
                 onTouchEnd={handleCardRelease}
                 className={`rounded-full bg-white/95 backdrop-blur flex items-center justify-center outline-none focus:outline-none shadow-2xl border-8 border-black/20 overflow-hidden ${cardButtonAnimating ? 'bounce-on-press' : ''}`}
-                style={{ 
-                  width: 'min(50vw, 480px)', 
-                  height: 'min(50vw, 480px)',
-                  minWidth: '280px',
-                  minHeight: '280px',
-                  touchAction: 'manipulation',
-                }}
+                style={CARD_EMOJI_BUTTON_STYLE}
               >
                 <div style={{ fontSize: 'min(28vw, 14rem)', lineHeight: 1 }}>{currentCard.emoji}</div>
               </button>
@@ -436,9 +467,7 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
                 className="font-bold text-center px-4 my-6"
                 style={{ 
                   fontSize: 'clamp(48px, 14vw, 160px)',
-                  fontFamily: "'Quicksand', sans-serif",
-                  textShadow: '4px 4px 8px rgba(0,0,0,0.4)',
-                  color: '#FFFFFF'
+                  ...LABEL_STYLE
                 }}
               >
                 {currentCard.label}
@@ -450,12 +479,7 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
                  style={{ transform: 'translateY(100%)', backgroundColor: getCardColor((currentIndex + 1) % cards.length) }}>
               <button 
                 className="rounded-full bg-white/95 backdrop-blur flex items-center justify-center shadow-2xl pointer-events-none border-8 border-black/20 overflow-hidden"
-                style={{ 
-                  width: 'min(50vw, 480px)', 
-                  height: 'min(50vw, 480px)',
-                  minWidth: '280px',
-                  minHeight: '280px'
-                }}
+                style={CARD_EMOJI_BUTTON_STYLE}
               >
                 <div style={{ fontSize: 'min(28vw, 14rem)', lineHeight: 1 }}>{nextCard.emoji}</div>
               </button>
@@ -463,9 +487,7 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
                 className="font-bold text-center px-4 my-6"
                 style={{ 
                   fontSize: 'clamp(48px, 12vw, 144px)',
-                  fontFamily: "'Quicksand', sans-serif",
-                  textShadow: '4px 4px 8px rgba(0,0,0,0.4)',
-                  color: '#FFFFFF'
+                  ...LABEL_STYLE
                 }}
               >
                 {nextCard.label}
