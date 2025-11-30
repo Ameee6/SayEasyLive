@@ -294,7 +294,7 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
             onTouchStart={handleYesPress}
             onTouchEnd={handleYesRelease}
             aria-label={leftButtons.top.speakText}
-            className={`flex flex-col items-center justify-center rounded-full outline-none focus:outline-none shadow-2xl border-8 border-white/40 overflow-hidden ${yesButtonAnimating ? 'spin-on-press' : ''}`}
+            className={`flex flex-col items-center justify-center rounded-full outline-none focus:outline-none shadow-2xl border-4 border-white overflow-hidden ${yesButtonAnimating ? 'spin-on-press' : ''}`}
             style={{
               ...YES_NO_BUTTON_STYLE,
               backgroundColor: YES_BUTTON_COLOR,
@@ -331,7 +331,7 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
             onTouchStart={handleNoPress}
             onTouchEnd={handleNoRelease}
             aria-label={leftButtons.bottom.speakText}
-            className={`flex flex-col items-center justify-center rounded-full outline-none focus:outline-none shadow-2xl border-8 border-white/40 overflow-hidden ${noButtonAnimating ? 'spin-on-press' : ''}`}
+            className={`flex flex-col items-center justify-center rounded-full outline-none focus:outline-none shadow-2xl border-4 border-white overflow-hidden ${noButtonAnimating ? 'spin-on-press' : ''}`}
             style={{
               ...YES_NO_BUTTON_STYLE,
               backgroundColor: NO_BUTTON_COLOR,
@@ -426,22 +426,6 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
               </motion.div>
             </AnimatePresence>
 
-            {/* Position dots - larger for accessibility */}
-            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-4 z-20">
-              {cards.map((_, idx) => (
-                <motion.div
-                  key={idx}
-                  animate={{
-                    scale: idx === currentIndex ? 1.1 : 1,
-                    backgroundColor: idx === currentIndex ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.5)',
-                  }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                  className={`rounded-full shadow-lg ${
-                    idx === currentIndex ? 'w-12 h-12' : 'w-8 h-8'
-                  }`}
-                />
-              ))}
-            </div>
           </div>
 
           {/* Vertical dividing line */}
@@ -594,17 +578,21 @@ function DoubleTapExit({ onExit }) {
 function ThumbnailSidebar({ cards, currentIndex, getCardColor, images }) {
   return (
     <div 
-      className="flex flex-col items-center justify-center py-6 px-3 overflow-hidden"
+      className="flex flex-col items-center py-6 px-4"
       style={{ 
         width: '20%',
-        backgroundColor: '#f0f0f0',
+        backgroundColor: '#1a1a2e',
         touchAction: 'none', // Not interactive - purely visual
-        pointerEvents: 'none' // Prevent any interaction
+        pointerEvents: 'none', // Prevent any interaction
+        overflow: 'visible', // Allow glow effects to show
       }}
       aria-hidden="true" // Hide from screen readers since it's purely visual
     >
       {/* Vertically stacked thumbnails with generous spacing */}
-      <div className="flex flex-col gap-4 w-full max-h-full overflow-hidden">
+      <div 
+        className="flex flex-col gap-3 w-full h-full justify-center"
+        style={{ overflow: 'visible' }}
+      >
         {cards.map((card, idx) => {
           const isActive = idx === currentIndex;
           const cardColor = getCardColor(idx);
@@ -616,25 +604,24 @@ function ThumbnailSidebar({ cards, currentIndex, getCardColor, images }) {
               className={`
                 flex flex-col items-center justify-center
                 rounded-xl
-                ${isActive ? 'active-thumbnail-highlight' : 'opacity-60'}
+                ${isActive ? 'active-thumbnail-highlight' : 'opacity-70'}
               `}
               style={{
-                // Asymmetric borders: thick left/right, slim top/bottom
-                borderStyle: 'solid',
-                borderColor: cardColor,
-                borderTopWidth: isActive ? '2px' : '1px',
-                borderBottomWidth: isActive ? '2px' : '1px',
-                borderLeftWidth: isActive ? '14px' : '10px',
-                borderRightWidth: isActive ? '14px' : '10px',
+                // Unified white border for all thumbnails with card color accent on sides
+                border: '3px solid white',
+                borderLeftWidth: '10px',
+                borderRightWidth: '10px',
+                borderLeftColor: cardColor,
+                borderRightColor: cardColor,
                 backgroundColor: isActive ? '#ffffff' : '#fafafa',
                 // Increased vertical space (10% additional height)
                 minHeight: '68px',
-                maxHeight: cards.length > THUMBNAIL_SIZE_BREAKPOINT ? '123px' : '151px',
+                maxHeight: cards.length > THUMBNAIL_SIZE_BREAKPOINT ? '115px' : '140px',
                 flex: '1 1 0',
                 boxShadow: isActive 
                   ? getActiveThumbnailBoxShadow(cardColor) 
                   : '0 2px 4px rgba(0,0,0,0.1)',
-                transform: isActive ? 'scale(1.08)' : 'scale(1)',
+                transform: isActive ? 'scale(1.05)' : 'scale(1)',
                 transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out, border 0.3s ease-in-out',
                 position: 'relative',
                 zIndex: isActive ? 10 : 1,
