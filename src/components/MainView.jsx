@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { speak } from '../utils/speech';
 import { defaultLeftButtons } from '../data/defaultCards';
+import { loadAllImages } from '../utils/imageStorage';
 
 // 7 distinct bright solid colors - no gradients (using hex values for reliability)
 const CARD_COLORS = [
@@ -64,6 +65,7 @@ const LABEL_STYLE = {
 function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, onExitFullscreen }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0); // -1 for up, 1 for down, 0 for initial
+  const [images, setImages] = useState({}); // Images loaded from IndexedDB
 
   // Button animation states
   const [yesButtonAnimating, setYesButtonAnimating] = useState(false);
@@ -111,6 +113,17 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
       clearInterval(repeatIntervalRef.current);
       repeatIntervalRef.current = null;
     }
+  }, []);
+
+  // Load images from IndexedDB on mount.
+  // Separate from cleanup effect because this is an async data fetch operation,
+  // while the cleanup effect handles synchronous timer/interval cleanup.
+  useEffect(() => {
+    const loadImages = async () => {
+      const allImages = await loadAllImages();
+      setImages(allImages);
+    };
+    loadImages();
   }, []);
 
   // Cleanup all timeouts/intervals on unmount
@@ -258,17 +271,27 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
               backgroundColor: YES_BUTTON_COLOR,
             }}
           >
-            <div style={{ fontSize: 'min(14vw, 7vh)', lineHeight: 1 }}>{leftButtons.top.emoji}</div>
-            <div 
-              className="font-bold text-center leading-tight mt-1"
-              style={{ 
-                fontSize: 'clamp(36px, 5vw, 72px)',
-                ...LABEL_STYLE,
-                textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
-              }}
-            >
-              {leftButtons.top.label}
-            </div>
+            {leftButtons.top.imageId && images[leftButtons.top.imageId] ? (
+              <img 
+                src={images[leftButtons.top.imageId]} 
+                alt={leftButtons.top.label}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <>
+                <div style={{ fontSize: 'min(14vw, 7vh)', lineHeight: 1 }}>{leftButtons.top.emoji}</div>
+                <div 
+                  className="font-bold text-center leading-tight mt-1"
+                  style={{ 
+                    fontSize: 'clamp(36px, 5vw, 72px)',
+                    ...LABEL_STYLE,
+                    textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
+                  }}
+                >
+                  {leftButtons.top.label}
+                </div>
+              </>
+            )}
           </button>
 
           {/* No button - perfectly circular, same size as Yes */}
@@ -285,17 +308,27 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
               backgroundColor: NO_BUTTON_COLOR,
             }}
           >
-            <div style={{ fontSize: 'min(14vw, 7vh)', lineHeight: 1 }}>{leftButtons.bottom.emoji}</div>
-            <div 
-              className="font-bold text-center leading-tight mt-1"
-              style={{ 
-                fontSize: 'clamp(36px, 5vw, 72px)',
-                ...LABEL_STYLE,
-                textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
-              }}
-            >
-              {leftButtons.bottom.label}
-            </div>
+            {leftButtons.bottom.imageId && images[leftButtons.bottom.imageId] ? (
+              <img 
+                src={images[leftButtons.bottom.imageId]} 
+                alt={leftButtons.bottom.label}
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <>
+                <div style={{ fontSize: 'min(14vw, 7vh)', lineHeight: 1 }}>{leftButtons.bottom.emoji}</div>
+                <div 
+                  className="font-bold text-center leading-tight mt-1"
+                  style={{ 
+                    fontSize: 'clamp(36px, 5vw, 72px)',
+                    ...LABEL_STYLE,
+                    textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
+                  }}
+                >
+                  {leftButtons.bottom.label}
+                </div>
+              </>
+            )}
           </button>
         </div>
 
@@ -340,7 +373,15 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
                   className={`rounded-full bg-white/95 backdrop-blur flex items-center justify-center outline-none focus:outline-none shadow-2xl border-8 border-black/20 overflow-hidden ${cardButtonAnimating ? 'bounce-on-press' : ''}`}
                   style={CARD_EMOJI_BUTTON_STYLE}
                 >
-                  <div style={{ fontSize: 'min(28vw, 14rem)', lineHeight: 1 }}>{currentCard.emoji}</div>
+                  {currentCard.imageId && images[currentCard.imageId] ? (
+                    <img 
+                      src={images[currentCard.imageId]} 
+                      alt={currentCard.label}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div style={{ fontSize: 'min(28vw, 14rem)', lineHeight: 1 }}>{currentCard.emoji}</div>
+                  )}
                 </button>
 
                 {/* Title/Label - much larger text */}
@@ -381,7 +422,8 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
           <ThumbnailSidebar 
             cards={cards} 
             currentIndex={currentIndex} 
-            getCardColor={getCardColor} 
+            getCardColor={getCardColor}
+            images={images}
           />
         </div>
       </div>
@@ -419,7 +461,7 @@ function DoubleTapExit({ onExit }) {
 }
 
 // Thumbnail sidebar component for card preview/orientation
-function ThumbnailSidebar({ cards, currentIndex, getCardColor }) {
+function ThumbnailSidebar({ cards, currentIndex, getCardColor, images }) {
   return (
     <div 
       className="flex flex-col items-center justify-center py-6 px-3 overflow-hidden"
@@ -436,6 +478,7 @@ function ThumbnailSidebar({ cards, currentIndex, getCardColor }) {
         {cards.map((card, idx) => {
           const isActive = idx === currentIndex;
           const cardColor = getCardColor(idx);
+          const imageUrl = card.imageId ? images[card.imageId] : null;
           
           return (
             <div
@@ -467,15 +510,27 @@ function ThumbnailSidebar({ cards, currentIndex, getCardColor }) {
                 zIndex: isActive ? 10 : 1,
               }}
             >
-              {/* Thumbnail emoji */}
-              <div 
-                className="leading-none"
-                style={{ 
-                  fontSize: cards.length > THUMBNAIL_SIZE_BREAKPOINT ? 'clamp(16px, 3vw, 28px)' : 'clamp(20px, 4vw, 36px)',
-                }}
-              >
-                {card.emoji}
-              </div>
+              {/* Thumbnail emoji or image */}
+              {imageUrl ? (
+                <img 
+                  src={imageUrl} 
+                  alt={card.label}
+                  className="rounded object-cover"
+                  style={{ 
+                    width: cards.length > THUMBNAIL_SIZE_BREAKPOINT ? '28px' : '36px',
+                    height: cards.length > THUMBNAIL_SIZE_BREAKPOINT ? '28px' : '36px',
+                  }}
+                />
+              ) : (
+                <div 
+                  className="leading-none"
+                  style={{ 
+                    fontSize: cards.length > THUMBNAIL_SIZE_BREAKPOINT ? 'clamp(16px, 3vw, 28px)' : 'clamp(20px, 4vw, 36px)',
+                  }}
+                >
+                  {card.emoji}
+                </div>
+              )}
               
               {/* Thumbnail label */}
               <div 
