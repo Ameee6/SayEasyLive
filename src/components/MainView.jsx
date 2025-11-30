@@ -1,29 +1,122 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { speak } from '../utils/speech';
 import { defaultLeftButtons } from '../data/defaultCards';
+
+// 7 distinct bright solid colors - no gradients (using hex values for reliability)
+const CARD_COLORS = [
+  '#8B5CF6',  // Bright Purple
+  '#EC4899',  // Hot Pink
+  '#3B82F6',  // Electric Blue
+  '#FACC15',  // Sunny Yellow
+  '#F97316',  // Vibrant Orange
+  '#22C55E',  // Fresh Green
+  '#EF4444',  // Cherry Red
+];
+
+// Normalization factor to convert velocity to ~60fps frame rate
+const FRAME_RATE_NORMALIZATION = 16;
 
 function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, onExitFullscreen }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState(0); // Real-time drag position
   const [startY, setStartY] = useState(0);
-  const snapThreshold = 80; // pixels to snap to next card
+  const [isAnimating, setIsAnimating] = useState(false);
+  const velocityRef = useRef(0);
+  const lastTouchTimeRef = useRef(0);
+  const lastTouchYRef = useRef(0);
+  const animationRef = useRef(null);
 
   const handleSpeak = (text) => {
     speak(text, voicePreference);
   };
 
-  // Touch handlers - real-time following
+  // Get card color by index, cycling through the palette
+  const getCardColor = (index) => {
+    return CARD_COLORS[index % CARD_COLORS.length];
+  };
+
+  // Smooth momentum-based settle animation
+  const animateSettle = (initialVelocity, initialOffset) => {
+    const friction = 0.92; // Deceleration factor
+    const minVelocity = 0.5; // Stop when velocity is very low
+    const cardHeight = window.innerHeight; // Full screen card height
+    
+    let velocity = initialVelocity;
+    let offset = initialOffset;
+    
+    const animate = () => {
+      velocity *= friction;
+      offset += velocity;
+      
+      // Check if we should snap to a card
+      if (Math.abs(velocity) < minVelocity) {
+        // Determine final card based on offset
+        let targetIndex = currentIndex;
+        if (offset > cardHeight * 0.3) {
+          targetIndex = (currentIndex - 1 + cards.length) % cards.length;
+        } else if (offset < -cardHeight * 0.3) {
+          targetIndex = (currentIndex + 1) % cards.length;
+        }
+        
+        setCurrentIndex(targetIndex);
+        setDragOffset(0);
+        setIsAnimating(false);
+        return;
+      }
+      
+      // Check boundaries - if offset exceeds threshold, trigger card change
+      if (offset > cardHeight * 0.5) {
+        setCurrentIndex((prev) => (prev - 1 + cards.length) % cards.length);
+        setDragOffset(0);
+        setIsAnimating(false);
+        return;
+      } else if (offset < -cardHeight * 0.5) {
+        setCurrentIndex((prev) => (prev + 1) % cards.length);
+        setDragOffset(0);
+        setIsAnimating(false);
+        return;
+      }
+      
+      setDragOffset(offset);
+      animationRef.current = requestAnimationFrame(animate);
+    };
+    
+    setIsAnimating(true);
+    animationRef.current = requestAnimationFrame(animate);
+  };
+
+  // Touch handlers - real-time following with velocity tracking
   const handleTouchStart = (e) => {
     e.preventDefault();
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+    setIsAnimating(false);
     setIsDragging(true);
     setStartY(e.touches[0].clientY);
+    lastTouchYRef.current = e.touches[0].clientY;
+    lastTouchTimeRef.current = Date.now();
+    velocityRef.current = 0;
   };
 
   const handleTouchMove = (e) => {
     e.preventDefault();
     if (!isDragging) return;
-    const deltaY = e.touches[0].clientY - startY;
+    
+    const currentY = e.touches[0].clientY;
+    const currentTime = Date.now();
+    const deltaTime = currentTime - lastTouchTimeRef.current;
+    
+    if (deltaTime > 0) {
+      velocityRef.current = (currentY - lastTouchYRef.current) / deltaTime * FRAME_RATE_NORMALIZATION;
+    }
+    
+    lastTouchYRef.current = currentY;
+    lastTouchTimeRef.current = currentTime;
+    
+    const deltaY = currentY - startY;
     setDragOffset(deltaY);
   };
 
@@ -31,51 +124,59 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
     e.preventDefault();
     if (!isDragging) return;
 
-    // Determine which card to snap to
-    if (dragOffset > snapThreshold) {
-      // Dragged down - go to previous card
-      setCurrentIndex((prev) => (prev - 1 + cards.length) % cards.length);
-    } else if (dragOffset < -snapThreshold) {
-      // Dragged up - go to next card
-      setCurrentIndex((prev) => (prev + 1) % cards.length);
-    }
-
     setIsDragging(false);
-    setDragOffset(0);
     setStartY(0);
+    
+    // Use momentum scrolling with current velocity
+    animateSettle(velocityRef.current * 2, dragOffset);
   };
 
-  // Mouse handlers - real-time following
+  // Mouse handlers - real-time following with velocity tracking
   const handleMouseDown = (e) => {
+    if (animationRef.current) {
+      cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+    setIsAnimating(false);
     setIsDragging(true);
     setStartY(e.clientY);
+    lastTouchYRef.current = e.clientY;
+    lastTouchTimeRef.current = Date.now();
+    velocityRef.current = 0;
   };
 
   const handleMouseMove = (e) => {
     if (!isDragging) return;
-    const deltaY = e.clientY - startY;
+    
+    const currentY = e.clientY;
+    const currentTime = Date.now();
+    const deltaTime = currentTime - lastTouchTimeRef.current;
+    
+    if (deltaTime > 0) {
+      velocityRef.current = (currentY - lastTouchYRef.current) / deltaTime * FRAME_RATE_NORMALIZATION;
+    }
+    
+    lastTouchYRef.current = currentY;
+    lastTouchTimeRef.current = currentTime;
+    
+    const deltaY = currentY - startY;
     setDragOffset(deltaY);
   };
 
   const handleMouseUp = () => {
     if (!isDragging) return;
 
-    // Determine which card to snap to
-    if (dragOffset > snapThreshold) {
-      setCurrentIndex((prev) => (prev - 1 + cards.length) % cards.length);
-    } else if (dragOffset < -snapThreshold) {
-      setCurrentIndex((prev) => (prev + 1) % cards.length);
-    }
-
     setIsDragging(false);
-    setDragOffset(0);
     setStartY(0);
+    
+    // Use momentum scrolling with current velocity
+    animateSettle(velocityRef.current * 2, dragOffset);
   };
 
-  // Wheel handler
+  // Wheel handler with smooth scrolling
   const handleWheel = (e) => {
     e.preventDefault();
-    if (isDragging) return;
+    if (isDragging || isAnimating) return;
 
     if (e.deltaY > 0) {
       setCurrentIndex((prev) => (prev + 1) % cards.length);
@@ -88,36 +189,6 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
   const currentCard = cards[currentIndex];
   const prevCard = cards[(currentIndex - 1 + cards.length) % cards.length];
   const nextCard = cards[(currentIndex + 1) % cards.length];
-
-  // Vibrant gradient backgrounds for each card
-  const cardGradients = [
-    'from-purple-400 to-pink-400',
-    'from-pink-400 to-rose-400',
-    'from-blue-400 to-cyan-400',
-    'from-yellow-300 to-orange-400',
-    'from-orange-400 to-red-400',
-    'from-teal-400 to-green-400',
-    'from-rose-400 to-pink-500',
-    'from-cyan-400 to-blue-500',
-    'from-lime-400 to-green-500',
-    'from-fuchsia-400 to-purple-500'
-  ];
-
-  // Background colors (lighter versions for panel background)
-  const bgColors = [
-    'bg-purple-200',
-    'bg-pink-200',
-    'bg-blue-200',
-    'bg-yellow-100',
-    'bg-orange-200',
-    'bg-teal-200',
-    'bg-rose-200',
-    'bg-cyan-200',
-    'bg-lime-200',
-    'bg-fuchsia-200'
-  ];
-
-  const bgColor = bgColors[currentIndex % bgColors.length];
 
   return (
     <div className="w-screen h-screen flex flex-col relative bg-white no-select" style={{ touchAction: 'none' }}>
@@ -170,28 +241,22 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
           <div
             className="absolute inset-0 w-full h-full"
             style={{
-              transform: isDragging ? `translateY(${dragOffset}px)` : 'translateY(0)',
-              transition: isDragging ? 'none' : 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+              transform: isDragging || isAnimating ? `translateY(${dragOffset}px)` : 'translateY(0)',
+              transition: isDragging || isAnimating ? 'none' : 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
             }}
           >
             {/* Previous card (above current) */}
-            <div className={`absolute inset-0 w-full h-full bg-gradient-to-br ${cardGradients[(currentIndex - 1 + cards.length) % cardGradients.length]} flex flex-col items-center justify-center p-12`}
-                 style={{ transform: 'translateY(-100%)' }}>
-              <div className="text-[12rem] font-black text-yellow-300 mb-auto mt-12 drop-shadow-2xl animate-pulse">↑</div>
+            <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center p-12"
+                 style={{ transform: 'translateY(-100%)', backgroundColor: getCardColor((currentIndex - 1 + cards.length) % cards.length) }}>
               <button className="w-[500px] h-[500px] rounded-full bg-white/95 backdrop-blur flex items-center justify-center shadow-2xl pointer-events-none">
                 <div className="text-[18rem] leading-none">{prevCard.emoji}</div>
               </button>
               <div className="text-9xl font-black text-white text-center drop-shadow-2xl px-8 my-12">{prevCard.label}</div>
-              <div className="text-[12rem] font-black text-yellow-300 mb-12 mt-auto drop-shadow-2xl animate-pulse">↓</div>
             </div>
 
             {/* Current card - full screen */}
-            <div className={`absolute inset-0 w-full h-full bg-gradient-to-br ${cardGradients[currentIndex % cardGradients.length]} flex flex-col items-center justify-center p-12`}>
-
-              {/* UP arrow - huge and colorful */}
-              <div className="text-[12rem] font-black text-yellow-300 mb-auto mt-12 drop-shadow-2xl animate-pulse">
-                ↑
-              </div>
+            <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center p-12"
+                 style={{ backgroundColor: getCardColor(currentIndex) }}>
 
               {/* Huge tappable emoji circle - 25% bigger */}
               <button
@@ -206,22 +271,15 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
               <div className="text-9xl font-black text-white text-center drop-shadow-2xl px-8 my-12">
                 {currentCard.label}
               </div>
-
-              {/* DOWN arrow - huge and colorful */}
-              <div className="text-[12rem] font-black text-yellow-300 mb-12 mt-auto drop-shadow-2xl animate-pulse">
-                ↓
-              </div>
             </div>
 
             {/* Next card (below current) */}
-            <div className={`absolute inset-0 w-full h-full bg-gradient-to-br ${cardGradients[(currentIndex + 1) % cardGradients.length]} flex flex-col items-center justify-center p-12`}
-                 style={{ transform: 'translateY(100%)' }}>
-              <div className="text-[12rem] font-black text-yellow-300 mb-auto mt-12 drop-shadow-2xl animate-pulse">↑</div>
+            <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center p-12"
+                 style={{ transform: 'translateY(100%)', backgroundColor: getCardColor((currentIndex + 1) % cards.length) }}>
               <button className="w-[500px] h-[500px] rounded-full bg-white/95 backdrop-blur flex items-center justify-center shadow-2xl pointer-events-none">
                 <div className="text-[18rem] leading-none">{nextCard.emoji}</div>
               </button>
               <div className="text-9xl font-black text-white text-center drop-shadow-2xl px-8 my-12">{nextCard.label}</div>
-              <div className="text-[12rem] font-black text-yellow-300 mb-12 mt-auto drop-shadow-2xl animate-pulse">↓</div>
             </div>
           </div>
 
