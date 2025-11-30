@@ -1,0 +1,602 @@
+import { useState, useRef, useEffect } from 'react';
+import { loadDashboardSettings, saveDashboardSettings, loadRemovedCards, saveRemovedCards } from '../utils/storage';
+import { saveImage, loadAllImages, fileToDataUrl, resizeImage } from '../utils/imageStorage';
+
+// Color palette for scroll cards (matching MainView)
+const CARD_COLORS = [
+  '#8B5CF6',  // Bright Purple
+  '#EC4899',  // Hot Pink
+  '#3B82F6',  // Electric Blue
+  '#FACC15',  // Sunny Yellow
+  '#F97316',  // Vibrant Orange
+  '#22C55E',  // Fresh Green
+  '#EF4444',  // Cherry Red
+];
+
+const YES_BUTTON_COLOR = '#00E676';
+const NO_BUTTON_COLOR = '#FF6D00';
+
+function SettingsDashboard({ onSave, onBack }) {
+  const [settings, setSettings] = useState(loadDashboardSettings());
+  const [images, setImages] = useState({});
+  const [removedCards, setRemovedCards] = useState(loadRemovedCards());
+  const [editingItem, setEditingItem] = useState(null); // { type: 'main-top'|'main-bottom'|'card', index?: number }
+  const [tempLabel, setTempLabel] = useState('');
+  const [tempSpeakText, setTempSpeakText] = useState('');
+  const [showRemovedCards, setShowRemovedCards] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  
+  const fileInputRef = useRef(null);
+  const currentUploadTarget = useRef(null);
+
+  // Load all images on mount
+  useEffect(() => {
+    const loadImages = async () => {
+      const allImages = await loadAllImages();
+      setImages(allImages);
+    };
+    loadImages();
+  }, []);
+
+  // Get color for a card by index
+  const getCardColor = (index) => CARD_COLORS[index % CARD_COLORS.length];
+
+  // Handle image upload trigger
+  const handleImageUpload = (targetId) => {
+    currentUploadTarget.current = targetId;
+    fileInputRef.current?.click();
+  };
+
+  // Handle file selection
+  const handleFileSelect = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file || !currentUploadTarget.current) return;
+
+    try {
+      const dataUrl = await fileToDataUrl(file);
+      const resizedDataUrl = await resizeImage(dataUrl);
+      const targetId = currentUploadTarget.current;
+      
+      await saveImage(targetId, resizedDataUrl);
+      setImages(prev => ({ ...prev, [targetId]: resizedDataUrl }));
+
+      // Update settings with imageId reference
+      if (targetId === 'main-top' || targetId === 'main-bottom') {
+        const buttonKey = targetId === 'main-top' ? 'top' : 'bottom';
+        setSettings(prev => ({
+          ...prev,
+          mainButtons: {
+            ...prev.mainButtons,
+            [buttonKey]: {
+              ...prev.mainButtons[buttonKey],
+              imageId: targetId
+            }
+          }
+        }));
+      } else if (targetId.startsWith('card-')) {
+        const cardIndex = settings.scrollCards.findIndex(c => c.id === targetId);
+        if (cardIndex !== -1) {
+          const newCards = [...settings.scrollCards];
+          newCards[cardIndex] = { ...newCards[cardIndex], imageId: targetId };
+          setSettings(prev => ({ ...prev, scrollCards: newCards }));
+        }
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+    }
+
+    // Reset file input
+    e.target.value = '';
+    currentUploadTarget.current = null;
+  };
+
+  // Start editing a button/card label
+  const startEditing = (type, index = null) => {
+    let item;
+    if (type === 'main-top') {
+      item = settings.mainButtons.top;
+    } else if (type === 'main-bottom') {
+      item = settings.mainButtons.bottom;
+    } else if (type === 'card' && index !== null) {
+      item = settings.scrollCards[index];
+    }
+    
+    if (item) {
+      setEditingItem({ type, index });
+      setTempLabel(item.label);
+      setTempSpeakText(item.speakText || item.label);
+    }
+  };
+
+  // Save edited label
+  const saveEditing = () => {
+    if (!editingItem) return;
+
+    const { type, index } = editingItem;
+    
+    if (type === 'main-top' || type === 'main-bottom') {
+      const buttonKey = type === 'main-top' ? 'top' : 'bottom';
+      setSettings(prev => ({
+        ...prev,
+        mainButtons: {
+          ...prev.mainButtons,
+          [buttonKey]: {
+            ...prev.mainButtons[buttonKey],
+            label: tempLabel,
+            speakText: tempSpeakText || tempLabel
+          }
+        }
+      }));
+    } else if (type === 'card' && index !== null) {
+      const newCards = [...settings.scrollCards];
+      newCards[index] = {
+        ...newCards[index],
+        label: tempLabel,
+        speakText: tempSpeakText || tempLabel
+      };
+      setSettings(prev => ({ ...prev, scrollCards: newCards }));
+    }
+
+    setEditingItem(null);
+    setTempLabel('');
+    setTempSpeakText('');
+  };
+
+  // Cancel editing
+  const cancelEditing = () => {
+    setEditingItem(null);
+    setTempLabel('');
+    setTempSpeakText('');
+  };
+
+  // Add new card
+  const addCard = () => {
+    if (settings.scrollCards.length >= 10) return;
+    
+    const newId = `card-${Date.now()}`;
+    const newCard = {
+      id: newId,
+      label: `Card ${settings.scrollCards.length + 1}`,
+      emoji: '😊',
+      speakText: `Card ${settings.scrollCards.length + 1}`,
+      imageId: null
+    };
+    
+    setSettings(prev => ({
+      ...prev,
+      scrollCards: [...prev.scrollCards, newCard]
+    }));
+  };
+
+  // Remove card (save to removed cards for re-adding)
+  const removeCard = async (index) => {
+    if (settings.scrollCards.length <= 1) return;
+    
+    const cardToRemove = settings.scrollCards[index];
+    
+    // Save to removed cards list
+    const updatedRemovedCards = [...removedCards, cardToRemove];
+    setRemovedCards(updatedRemovedCards);
+    saveRemovedCards(updatedRemovedCards);
+    
+    // Remove from current cards
+    const newCards = settings.scrollCards.filter((_, i) => i !== index);
+    setSettings(prev => ({ ...prev, scrollCards: newCards }));
+  };
+
+  // Re-add a previously removed card
+  const reAddCard = (removedIndex) => {
+    if (settings.scrollCards.length >= 10) return;
+    
+    const cardToReAdd = removedCards[removedIndex];
+    
+    // Add back to scroll cards
+    setSettings(prev => ({
+      ...prev,
+      scrollCards: [...prev.scrollCards, cardToReAdd]
+    }));
+    
+    // Remove from removed cards list
+    const updatedRemovedCards = removedCards.filter((_, i) => i !== removedIndex);
+    setRemovedCards(updatedRemovedCards);
+    saveRemovedCards(updatedRemovedCards);
+  };
+
+  // Set number of cards
+  const setCardCount = (count) => {
+    if (count < 1 || count > 10) return;
+    
+    const currentCount = settings.scrollCards.length;
+    
+    if (count > currentCount) {
+      // Add new cards
+      const newCards = [...settings.scrollCards];
+      for (let i = currentCount; i < count; i++) {
+        newCards.push({
+          id: `card-${Date.now()}-${i}`,
+          label: `Card ${i + 1}`,
+          emoji: '😊',
+          speakText: `Card ${i + 1}`,
+          imageId: null
+        });
+      }
+      setSettings(prev => ({ ...prev, scrollCards: newCards }));
+    } else if (count < currentCount) {
+      // Remove cards (save to removed)
+      const removingCards = settings.scrollCards.slice(count);
+      const updatedRemovedCards = [...removedCards, ...removingCards];
+      setRemovedCards(updatedRemovedCards);
+      saveRemovedCards(updatedRemovedCards);
+      
+      const newCards = settings.scrollCards.slice(0, count);
+      setSettings(prev => ({ ...prev, scrollCards: newCards }));
+    }
+  };
+
+  // Handle save
+  const handleSave = async () => {
+    setIsSaving(true);
+    try {
+      saveDashboardSettings(settings);
+      onSave(settings);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Render button with image or emoji
+  const renderButtonContent = (item, imageId, size = 'large') => {
+    const imageUrl = images[imageId];
+    const sizeClasses = size === 'large' ? 'w-24 h-24' : 'w-12 h-12';
+    const fontSize = size === 'large' ? 'text-5xl' : 'text-2xl';
+    
+    if (imageUrl) {
+      return (
+        <img 
+          src={imageUrl} 
+          alt={item.label}
+          className={`${sizeClasses} object-cover rounded-full`}
+        />
+      );
+    }
+    return <span className={fontSize}>{item.emoji}</span>;
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-900 text-white flex flex-col">
+      {/* Hidden file input */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        className="hidden"
+        onChange={handleFileSelect}
+      />
+
+      {/* Header */}
+      <div className="flex justify-between items-center p-4 bg-gray-800 border-b border-gray-700">
+        <h1 className="text-2xl font-bold">SayEasy Settings Dashboard</h1>
+        <button
+          onClick={onBack}
+          className="px-4 py-2 bg-gray-600 rounded-lg hover:bg-gray-500 text-lg"
+        >
+          ← Back
+        </button>
+      </div>
+
+      {/* Main content area - split into preview and sidebar */}
+      <div className="flex flex-1 overflow-hidden">
+        {/* Left: Live Preview Panel */}
+        <div className="flex-1 flex flex-col p-4 overflow-auto">
+          <h2 className="text-xl font-semibold mb-4 text-center">Live Preview</h2>
+          
+          {/* Preview layout mimicking main app */}
+          <div className="flex flex-1 bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-600">
+            {/* Left side - Main buttons */}
+            <div className="w-1/3 flex flex-col items-center justify-around p-4 bg-gray-900 border-r-2 border-gray-600">
+              {/* Top main button (Yes/More) */}
+              <EditableButton
+                item={settings.mainButtons.top}
+                imageId={settings.mainButtons.top.imageId}
+                color={YES_BUTTON_COLOR}
+                onUpload={() => handleImageUpload('main-top')}
+                onEditLabel={() => startEditing('main-top')}
+                isEditing={editingItem?.type === 'main-top'}
+                renderContent={renderButtonContent}
+              />
+              
+              {/* Bottom main button (No/All Done) */}
+              <EditableButton
+                item={settings.mainButtons.bottom}
+                imageId={settings.mainButtons.bottom.imageId}
+                color={NO_BUTTON_COLOR}
+                onUpload={() => handleImageUpload('main-bottom')}
+                onEditLabel={() => startEditing('main-bottom')}
+                isEditing={editingItem?.type === 'main-bottom'}
+                renderContent={renderButtonContent}
+              />
+            </div>
+
+            {/* Right side - Scroll cards preview */}
+            <div className="w-2/3 flex">
+              {/* Card area */}
+              <div 
+                className="flex-1 flex items-center justify-center p-4"
+                style={{ backgroundColor: getCardColor(0) }}
+              >
+                {settings.scrollCards.length > 0 && (
+                  <div className="text-center">
+                    <div className="w-32 h-32 rounded-full bg-white/90 flex items-center justify-center mx-auto mb-4 shadow-lg">
+                      {renderButtonContent(settings.scrollCards[0], settings.scrollCards[0].imageId, 'large')}
+                    </div>
+                    <div className="text-3xl font-bold text-white drop-shadow-lg">
+                      {settings.scrollCards[0].label}
+                    </div>
+                    <div className="text-sm text-white/70 mt-2">
+                      (First card preview)
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Thumbnail sidebar */}
+              <div className="w-20 bg-gray-100 flex flex-col items-center py-2 gap-2 overflow-y-auto">
+                {settings.scrollCards.map((card, idx) => (
+                  <div
+                    key={card.id}
+                    className="w-14 h-14 rounded-lg flex items-center justify-center text-lg shadow"
+                    style={{ 
+                      backgroundColor: getCardColor(idx),
+                      border: idx === 0 ? '3px solid white' : '1px solid rgba(0,0,0,0.2)'
+                    }}
+                  >
+                    {images[card.imageId] ? (
+                      <img 
+                        src={images[card.imageId]} 
+                        alt={card.label}
+                        className="w-10 h-10 object-cover rounded"
+                      />
+                    ) : (
+                      <span>{card.emoji}</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Right: Edit Panel */}
+        <div className="w-96 bg-gray-800 border-l border-gray-600 flex flex-col overflow-hidden">
+          {/* Card count selector */}
+          <div className="p-4 border-b border-gray-600">
+            <h3 className="text-lg font-semibold mb-3">Number of Scroll Cards</h3>
+            <div className="flex flex-wrap gap-2">
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+                <button
+                  key={num}
+                  onClick={() => setCardCount(num)}
+                  className={`w-10 h-10 rounded-lg text-lg font-bold transition-colors ${
+                    settings.scrollCards.length === num
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  }`}
+                >
+                  {num}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Scroll cards editor */}
+          <div className="flex-1 overflow-y-auto p-4">
+            <div className="flex justify-between items-center mb-3">
+              <h3 className="text-lg font-semibold">Edit Scroll Cards</h3>
+              {settings.scrollCards.length < 10 && (
+                <button
+                  onClick={addCard}
+                  className="px-3 py-1 bg-green-600 rounded hover:bg-green-500 text-sm"
+                >
+                  + Add Card
+                </button>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              {settings.scrollCards.map((card, idx) => (
+                <CardEditor
+                  key={card.id}
+                  card={card}
+                  index={idx}
+                  color={getCardColor(idx)}
+                  imageUrl={images[card.imageId]}
+                  isEditing={editingItem?.type === 'card' && editingItem?.index === idx}
+                  onUpload={() => handleImageUpload(card.id)}
+                  onEditLabel={() => startEditing('card', idx)}
+                  onRemove={() => removeCard(idx)}
+                  canRemove={settings.scrollCards.length > 1}
+                />
+              ))}
+            </div>
+
+            {/* Re-add removed cards section */}
+            {removedCards.length > 0 && (
+              <div className="mt-6">
+                <button
+                  onClick={() => setShowRemovedCards(!showRemovedCards)}
+                  className="flex items-center gap-2 text-gray-400 hover:text-white mb-2"
+                >
+                  <span>{showRemovedCards ? '▼' : '▶'}</span>
+                  <span>Previously Removed ({removedCards.length})</span>
+                </button>
+                
+                {showRemovedCards && (
+                  <div className="space-y-2 ml-4">
+                    {removedCards.map((card, idx) => (
+                      <div 
+                        key={`removed-${idx}`}
+                        className="flex items-center justify-between p-2 bg-gray-700 rounded"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl">{card.emoji}</span>
+                          <span className="text-gray-300">{card.label}</span>
+                        </div>
+                        {settings.scrollCards.length < 10 && (
+                          <button
+                            onClick={() => reAddCard(idx)}
+                            className="px-2 py-1 bg-blue-600 rounded text-sm hover:bg-blue-500"
+                          >
+                            Re-add
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Label editing modal */}
+      {editingItem && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-gray-800 rounded-xl p-6 w-full max-w-md">
+            <h3 className="text-xl font-bold mb-4">Edit Button</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Label (shown on button)</label>
+                <input
+                  type="text"
+                  value={tempLabel}
+                  onChange={(e) => setTempLabel(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-700 rounded-lg text-white text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter label..."
+                  autoFocus
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm text-gray-400 mb-1">Voice Text (what to say)</label>
+                <input
+                  type="text"
+                  value={tempSpeakText}
+                  onChange={(e) => setTempSpeakText(e.target.value)}
+                  className="w-full px-4 py-3 bg-gray-700 rounded-lg text-white text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="What the app will say..."
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={cancelEditing}
+                className="flex-1 px-4 py-3 bg-gray-600 rounded-lg hover:bg-gray-500 text-lg"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveEditing}
+                className="flex-1 px-4 py-3 bg-blue-600 rounded-lg hover:bg-blue-500 text-lg font-semibold"
+              >
+                Save
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Bottom action bar */}
+      <div className="p-4 bg-gray-800 border-t border-gray-600 flex justify-end gap-4">
+        <button
+          onClick={onBack}
+          className="px-6 py-3 bg-gray-600 rounded-lg hover:bg-gray-500 text-lg"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleSave}
+          disabled={isSaving}
+          className="px-8 py-4 bg-green-600 rounded-xl hover:bg-green-500 text-xl font-bold min-w-[200px] disabled:opacity-50"
+        >
+          {isSaving ? 'Saving...' : '✓ Save & Apply'}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// Editable main button component
+function EditableButton({ item, imageId, color, onUpload, onEditLabel, isEditing, renderContent }) {
+  return (
+    <div className="flex flex-col items-center gap-2">
+      <button
+        onClick={onUpload}
+        className="w-28 h-28 rounded-full flex items-center justify-center shadow-lg hover:scale-105 transition-transform border-4 border-white/30"
+        style={{ backgroundColor: color }}
+        title="Tap to change image"
+      >
+        {renderContent(item, imageId, 'large')}
+      </button>
+      <button
+        onClick={onEditLabel}
+        className={`px-3 py-1 rounded text-sm hover:bg-gray-700 ${isEditing ? 'bg-blue-600' : 'bg-gray-800'}`}
+        title="Tap to edit label"
+      >
+        {item.label}
+      </button>
+    </div>
+  );
+}
+
+// Card editor row component
+function CardEditor({ card, index, color, imageUrl, isEditing, onUpload, onEditLabel, onRemove, canRemove }) {
+  return (
+    <div 
+      className="flex items-center gap-3 p-3 rounded-lg"
+      style={{ backgroundColor: `${color}33`, borderLeft: `4px solid ${color}` }}
+    >
+      {/* Card number */}
+      <div className="w-6 text-gray-400 font-bold">#{index + 1}</div>
+      
+      {/* Image/emoji button */}
+      <button
+        onClick={onUpload}
+        className="w-14 h-14 rounded-lg flex items-center justify-center bg-white/20 hover:bg-white/30 transition-colors"
+        title="Tap to upload image"
+      >
+        {imageUrl ? (
+          <img src={imageUrl} alt={card.label} className="w-12 h-12 object-cover rounded" />
+        ) : (
+          <span className="text-2xl">{card.emoji}</span>
+        )}
+      </button>
+      
+      {/* Label edit button */}
+      <button
+        onClick={onEditLabel}
+        className={`flex-1 px-3 py-2 rounded text-left hover:bg-white/10 ${isEditing ? 'bg-blue-600/50' : ''}`}
+        title="Tap to edit label"
+      >
+        <div className="font-medium">{card.label}</div>
+        <div className="text-xs text-gray-400">{card.speakText}</div>
+      </button>
+      
+      {/* Remove button */}
+      {canRemove && (
+        <button
+          onClick={onRemove}
+          className="w-8 h-8 rounded-full bg-red-600/50 hover:bg-red-600 flex items-center justify-center"
+          title="Remove card"
+        >
+          ✕
+        </button>
+      )}
+    </div>
+  );
+}
+
+export default SettingsDashboard;

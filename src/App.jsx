@@ -1,26 +1,25 @@
 import { useState, useEffect } from 'react';
 import MainView from './components/MainView';
-import Settings from './components/Settings';
+import SettingsDashboard from './components/SettingsDashboard';
 import { initSpeech } from './utils/speech';
-import { loadSettings, saveSettings } from './utils/storage';
-import { defaultCards, defaultLeftButtons } from './data/defaultCards';
+import { loadDashboardSettings, saveDashboardSettings } from './utils/storage';
 
 function App() {
   const [currentView, setCurrentView] = useState('main'); // 'main' or 'settings'
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const [settings, setSettings] = useState(loadSettings());
+  const [dashboardSettings, setDashboardSettings] = useState(loadDashboardSettings());
 
   // Initialize speech synthesis on mount
   useEffect(() => {
     initSpeech();
   }, []);
 
-  // Get the cards to display based on mode
+  // Convert dashboard settings to format expected by MainView
   const getCards = () => {
-    if (settings.mode === 'custom' && settings.customCards.length > 0) {
-      return settings.customCards;
-    }
-    return defaultCards;
+    return dashboardSettings.scrollCards;
+  };
+
+  const getLeftButtons = () => {
+    return dashboardSettings.mainButtons;
   };
 
   // Handle entering fullscreen
@@ -28,32 +27,26 @@ function App() {
     const elem = document.documentElement;
 
     if (elem.requestFullscreen) {
-      elem.requestFullscreen().then(() => setIsFullscreen(true)).catch(() => {});
+      elem.requestFullscreen().catch(() => {});
     } else if (elem.webkitRequestFullscreen) {
       elem.webkitRequestFullscreen();
-      setIsFullscreen(true);
     } else if (elem.mozRequestFullScreen) {
       elem.mozRequestFullScreen();
-      setIsFullscreen(true);
     } else if (elem.msRequestFullscreen) {
       elem.msRequestFullscreen();
-      setIsFullscreen(true);
     }
   };
 
   // Handle exiting fullscreen
   const exitFullscreen = () => {
     if (document.exitFullscreen) {
-      document.exitFullscreen().then(() => setIsFullscreen(false)).catch(() => {});
+      document.exitFullscreen().catch(() => {});
     } else if (document.webkitExitFullscreen) {
       document.webkitExitFullscreen();
-      setIsFullscreen(false);
     } else if (document.mozCancelFullScreen) {
       document.mozCancelFullScreen();
-      setIsFullscreen(false);
     } else if (document.msExitFullscreen) {
       document.msExitFullscreen();
-      setIsFullscreen(false);
     }
 
     // Return to settings after exiting fullscreen
@@ -69,8 +62,6 @@ function App() {
         document.mozFullScreenElement ||
         document.msFullscreenElement
       );
-
-      setIsFullscreen(isCurrentlyFullscreen);
 
       if (!isCurrentlyFullscreen && currentView === 'main') {
         setCurrentView('settings');
@@ -90,10 +81,10 @@ function App() {
     };
   }, [currentView]);
 
-  // Handle saving settings
+  // Handle saving settings from dashboard
   const handleSaveSettings = (newSettings) => {
-    setSettings(newSettings);
-    saveSettings(newSettings);
+    setDashboardSettings(newSettings);
+    saveDashboardSettings(newSettings);
     setCurrentView('main');
     // Enter fullscreen when returning to main view
     setTimeout(enterFullscreen, 100);
@@ -108,8 +99,7 @@ function App() {
   // Render appropriate view
   if (currentView === 'settings') {
     return (
-      <Settings
-        settings={settings}
+      <SettingsDashboard
         onSave={handleSaveSettings}
         onBack={handleBackToMain}
       />
@@ -119,8 +109,8 @@ function App() {
   return (
     <MainView
       cards={getCards()}
-      leftButtons={defaultLeftButtons}
-      voicePreference={settings.voicePreference}
+      leftButtons={getLeftButtons()}
+      voicePreference={dashboardSettings.voicePreference}
       onExitFullscreen={exitFullscreen}
     />
   );
