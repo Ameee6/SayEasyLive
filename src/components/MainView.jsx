@@ -153,9 +153,9 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
           </button>
         </div>
 
-        {/* Right Panel - 2/3 width - Smooth scrolling cards */}
+        {/* Right Panel - 2/3 width - Full-screen card swiper */}
         <div
-          className={`w-2/3 flex items-center justify-center overflow-hidden relative transition-colors duration-700 ${bgColor}`}
+          className="w-2/3 flex items-center justify-center overflow-hidden relative"
           style={{ touchAction: 'none' }}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
@@ -166,88 +166,70 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
           onMouseLeave={handleMouseUp}
           onWheel={handleWheel}
         >
-          {/* Cards container - moves with drag */}
+          {/* Full-screen cards - one at a time, slides in/out */}
           <div
-            className="relative w-full h-full flex flex-col items-center justify-center"
+            className="absolute inset-0 w-full h-full"
             style={{
               transform: isDragging ? `translateY(${dragOffset}px)` : 'translateY(0)',
-              transition: isDragging ? 'none' : 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)'
+              transition: isDragging ? 'none' : 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
             }}
           >
-            {/* Previous card (peeking from top) */}
-            <div
-              className="absolute top-0 opacity-30 scale-90"
-              style={{ transform: 'translateY(-85%)' }}
-            >
-              <Card card={prevCard} gradient={cardGradients[(currentIndex - 1 + cards.length) % cardGradients.length]} onSpeak={handleSpeak} isPeek />
+            {/* Current card - full screen */}
+            <div className={`absolute inset-0 w-full h-full bg-gradient-to-br ${cardGradients[currentIndex % cardGradients.length]} flex flex-col items-center justify-center p-12`}>
+
+              {/* UP arrow */}
+              <div className="text-8xl font-black text-white/90 mb-auto mt-8 drop-shadow-2xl">
+                ↑
+              </div>
+
+              {/* Huge tappable emoji circle */}
+              <button
+                onClick={() => handleSpeak(currentCard.speakText)}
+                className="w-80 h-80 md:w-96 md:h-96 rounded-full bg-white/95 backdrop-blur flex items-center justify-center outline-none focus:outline-none transform active:scale-95 transition-all shadow-2xl"
+                style={{ touchAction: 'manipulation' }}
+              >
+                <div className="text-[16rem] leading-none">{currentCard.emoji}</div>
+              </button>
+
+              {/* Title/Label */}
+              <div className="text-8xl font-black text-white text-center drop-shadow-2xl px-8 my-12">
+                {currentCard.label}
+              </div>
+
+              {/* DOWN arrow */}
+              <div className="text-8xl font-black text-white/90 mb-8 mt-auto drop-shadow-2xl">
+                ↓
+              </div>
             </div>
 
-            {/* Current card */}
-            <div className="relative z-10">
-              <Card card={currentCard} gradient={cardGradients[currentIndex % cardGradients.length]} onSpeak={handleSpeak} />
-            </div>
-
-            {/* Next card (peeking from bottom) */}
+            {/* Next card (below current, slides up when swiping) */}
             <div
-              className="absolute bottom-0 opacity-30 scale-90"
-              style={{ transform: 'translateY(85%)' }}
-            >
-              <Card card={nextCard} gradient={cardGradients[(currentIndex + 1) % cardGradients.length]} onSpeak={handleSpeak} isPeek />
-            </div>
+              className={`absolute inset-0 w-full h-full bg-gradient-to-br ${cardGradients[(currentIndex + 1) % cardGradients.length]}`}
+              style={{ transform: 'translateY(100%)' }}
+            />
+
+            {/* Previous card (above current, slides down when swiping) */}
+            <div
+              className={`absolute inset-0 w-full h-full bg-gradient-to-br ${cardGradients[(currentIndex - 1 + cards.length) % cardGradients.length]}`}
+              style={{ transform: 'translateY(-100%)' }}
+            />
           </div>
 
           {/* Position dots */}
-          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-3 z-20">
+          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-4 z-20">
             {cards.map((_, idx) => (
               <div
                 key={idx}
                 className={`rounded-full transition-all duration-300 ${
                   idx === currentIndex
-                    ? 'w-8 h-8 bg-black scale-110'
-                    : 'w-6 h-6 bg-gray-700 opacity-50'
+                    ? 'w-10 h-10 bg-white scale-110 shadow-lg'
+                    : 'w-7 h-7 bg-white/50'
                 }`}
               />
             ))}
           </div>
         </div>
       </div>
-    </div>
-  );
-}
-
-// Card component - modern, playful design
-function Card({ card, gradient, onSpeak, isPeek = false }) {
-  return (
-    <div className={`bg-gradient-to-br ${gradient} rounded-[3rem] shadow-2xl p-8 flex flex-col items-center w-[85vw] md:w-[50vw] max-w-2xl ${isPeek ? 'pointer-events-none' : ''}`}>
-
-      {/* UP arrow - smaller, cleaner */}
-      {!isPeek && (
-        <div className="text-6xl font-bold text-white/80 mb-6 drop-shadow-lg">
-          ↑
-        </div>
-      )}
-
-      {/* Tappable emoji button - HUGE */}
-      <button
-        onClick={() => !isPeek && onSpeak(card.speakText)}
-        className="w-72 h-72 md:w-80 md:h-80 rounded-full bg-white/90 backdrop-blur flex items-center justify-center outline-none focus:outline-none transform active:scale-95 transition-all shadow-2xl mb-8"
-        style={{ touchAction: 'manipulation' }}
-        disabled={isPeek}
-      >
-        <div className="text-[14rem] leading-none">{card.emoji}</div>
-      </button>
-
-      {/* Label - big and bold */}
-      <div className="text-7xl font-black text-white text-center mb-6 drop-shadow-lg px-6">
-        {card.label}
-      </div>
-
-      {/* DOWN arrow - smaller, cleaner */}
-      {!isPeek && (
-        <div className="text-6xl font-bold text-white/80 mt-2 drop-shadow-lg">
-          ↓
-        </div>
-      )}
     </div>
   );
 }
