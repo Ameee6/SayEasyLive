@@ -446,10 +446,17 @@ function ThumbnailSidebar({ cards, currentIndex, getCardColor }) {
                 ${isActive ? 'active-thumbnail-highlight' : 'opacity-60'}
               `}
               style={{
-                border: isActive ? `5px solid ${cardColor}` : `3px solid ${cardColor}`,
+                // Asymmetric borders: thick left/right, slim top/bottom
+                borderStyle: 'solid',
+                borderColor: cardColor,
+                borderTopWidth: isActive ? '2px' : '1px',
+                borderBottomWidth: isActive ? '2px' : '1px',
+                borderLeftWidth: isActive ? '10px' : '6px',
+                borderRightWidth: isActive ? '10px' : '6px',
                 backgroundColor: isActive ? '#ffffff' : '#fafafa',
-                minHeight: '50px',
-                maxHeight: cards.length > THUMBNAIL_SIZE_BREAKPOINT ? '90px' : '110px',
+                // 25% increased vertical space
+                minHeight: '62px',
+                maxHeight: cards.length > THUMBNAIL_SIZE_BREAKPOINT ? '112px' : '137px',
                 flex: '1 1 0',
                 boxShadow: isActive 
                   ? getActiveThumbnailBoxShadow(cardColor) 
