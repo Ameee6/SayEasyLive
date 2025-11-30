@@ -122,20 +122,20 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
     return CARD_COLORS[index % CARD_COLORS.length];
   };
 
-  // Navigate to next card (swipe up / scroll down)
+  // Navigate to next card (pull/swipe down reveals the card above)
   const goToNextCard = useCallback(() => {
     setDirection(1);
     setCurrentIndex((prev) => (prev + 1) % cards.length);
   }, [cards.length]);
 
-  // Navigate to previous card (swipe down / scroll up)
+  // Navigate to previous card (pull/swipe up reveals the card below)
   const goToPrevCard = useCallback(() => {
     setDirection(-1);
     setCurrentIndex((prev) => (prev - 1 + cards.length) % cards.length);
   }, [cards.length]);
 
   // Handle drag end with velocity-based navigation
-  // Pulling down reveals next card, pulling up reveals previous card
+  // Stacked index behavior: drag down to see above (next card), drag up to see below (previous card)
   const handleDragEnd = useCallback((event, info) => {
     const threshold = 50; // Minimum drag distance to trigger card change
     const velocityThreshold = 200; // Minimum velocity to trigger card change
@@ -145,10 +145,10 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
     
     // Determine if we should change cards based on drag distance or velocity
     if (offset > threshold || velocity > velocityThreshold) {
-      // Dragged down or flicked down - go to next card (pull down reveals next)
+      // Dragged down - reveal next card from above (stacked index: pull down to see above)
       goToNextCard();
     } else if (offset < -threshold || velocity < -velocityThreshold) {
-      // Dragged up or flicked up - go to previous card (pull up reveals previous)
+      // Dragged up - reveal previous card from below (stacked index: pull up to see below)
       goToPrevCard();
     }
     // If neither threshold met, framer-motion spring will animate back to center
@@ -304,13 +304,13 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
               key={currentIndex}
               custom={direction}
               initial={(dir) => ({
-                y: dir === 0 ? 0 : dir > 0 ? '100%' : '-100%',
+                y: dir === 0 ? 0 : dir > 0 ? '-100%' : '100%',
               })}
               animate={{
                 y: 0,
               }}
               exit={(dir) => ({
-                y: dir > 0 ? '-100%' : '100%',
+                y: dir > 0 ? '100%' : '-100%',
               })}
               transition={TRANSITION_CONFIG}
               drag="y"
