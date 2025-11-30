@@ -89,11 +89,11 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
           {/* Top button - More/Yes */}
           <button
             onClick={() => handleSpeak(leftButtons.top.speakText)}
-            className="flex-1 flex flex-col items-center justify-center bg-green-400 hover:bg-green-500 active:bg-green-600 border-b-4 border-black transition-colors"
+            className="flex-1 flex flex-col items-center justify-center bg-green-300 hover:bg-green-400 active:bg-green-500 border-b-8 border-black transition-colors outline-none focus:outline-none"
             style={{ minHeight: '72px' }}
           >
-            <div className="text-8xl mb-4">{leftButtons.top.emoji}</div>
-            <div className="text-4xl font-bold text-black px-4 text-center">
+            <div className="text-[12rem] mb-6 leading-none">{leftButtons.top.emoji}</div>
+            <div className="text-7xl font-bold text-black px-4 text-center leading-tight">
               {leftButtons.top.label}
             </div>
           </button>
@@ -101,11 +101,11 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
           {/* Bottom button - All Done/No */}
           <button
             onClick={() => handleSpeak(leftButtons.bottom.speakText)}
-            className="flex-1 flex flex-col items-center justify-center bg-red-400 hover:bg-red-500 active:bg-red-600 transition-colors"
+            className="flex-1 flex flex-col items-center justify-center bg-red-300 hover:bg-red-400 active:bg-red-500 transition-colors outline-none focus:outline-none"
             style={{ minHeight: '72px' }}
           >
-            <div className="text-8xl mb-4">{leftButtons.bottom.emoji}</div>
-            <div className="text-4xl font-bold text-black px-4 text-center">
+            <div className="text-[12rem] mb-6 leading-none">{leftButtons.bottom.emoji}</div>
+            <div className="text-7xl font-bold text-black px-4 text-center leading-tight">
               {leftButtons.bottom.label}
             </div>
           </button>
@@ -127,7 +127,7 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
             {/* Tappable circle with emoji/icon */}
             <button
               onClick={() => handleSpeak(currentCard.speakText)}
-              className="w-64 h-64 md:w-80 md:h-80 rounded-full bg-white border-8 border-black flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 transition-colors mb-8 shadow-2xl"
+              className="w-64 h-64 md:w-80 md:h-80 rounded-full bg-white border-8 border-black flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 transition-colors mb-8 shadow-2xl outline-none focus:outline-none"
               style={{ minHeight: '72px', minWidth: '72px' }}
             >
               <div className="text-9xl">{currentCard.emoji}</div>
@@ -180,7 +180,7 @@ function DoubleTapExit({ onExit }) {
   return (
     <button
       onClick={handleTap}
-      className="absolute top-4 right-4 z-50 px-6 py-3 bg-gray-800 text-white text-lg rounded-lg hover:bg-gray-700 active:bg-gray-900 border-2 border-gray-600 shadow-lg"
+      className="absolute top-4 right-4 z-50 px-6 py-3 bg-gray-800 text-white text-lg rounded-lg hover:bg-gray-700 active:bg-gray-900 border-2 border-gray-600 shadow-lg outline-none focus:outline-none"
     >
       Double-tap to exit
     </button>
