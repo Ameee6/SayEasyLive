@@ -237,7 +237,7 @@ function Homepage({ onNavigateToSettings, onNavigateToMain }) {
                 <div>
                   <span className="font-semibold text-white">Add to Home Screen (iOS)</span>
                   <p className="text-gray-400 text-base mt-1">
-                    Safari → Share icon → Add to Home Screen
+                    Safari → Share icon → Add to Home Screen. This reduces accidental swipes/taps out of the main communication app.
                   </p>
                 </div>
               </li>
@@ -270,15 +270,22 @@ function Homepage({ onNavigateToSettings, onNavigateToMain }) {
             <span>Simple, Stable Communication</span>
           </div>
           <div className="flex gap-6 text-gray-400">
-            <span className="cursor-default" title="Coming soon">
-              About
-            </span>
-            <span className="cursor-default" title="Coming soon">
-              Help
-            </span>
-            <span className="cursor-default" title="Coming soon">
+            <a 
+              href="https://ajamcodes.netlify.app" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="hover:text-white transition-colors"
+            >
               Contact
-            </span>
+            </a>
+            <button
+              className="text-gray-500 text-sm cursor-default"
+              title="Account management coming soon"
+              aria-label="Manage Account - Account management coming soon"
+              disabled
+            >
+              Manage Account
+            </button>
           </div>
         </div>
       </footer>
