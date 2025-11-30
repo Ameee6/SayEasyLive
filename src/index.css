@@ -59,12 +59,10 @@ html, body {
   75% { transform: scale(1.04); }
 }
 
-/* Gentle bounce on card settle */
+/* Gentle settle animation on card transition - soft and subtle */
 @keyframes settleBounceFade {
   0% { transform: translateY(0); opacity: 1; }
-  25% { transform: translateY(-8px); }
-  50% { transform: translateY(4px); }
-  75% { transform: translateY(-2px); }
+  50% { transform: translateY(-3px); }
   100% { transform: translateY(0); opacity: 1; }
 }
 
@@ -77,5 +75,5 @@ html, body {
 }
 
 .settle-bounce {
-  animation: settleBounceFade 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  animation: settleBounceFade 800ms ease-in-out;
 }

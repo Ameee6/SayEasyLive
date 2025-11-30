@@ -24,21 +24,23 @@ const FRAME_RATE_NORMALIZATION = 16;
 const LONG_PRESS_THRESHOLD = 800; // 0.8 seconds
 const REPEAT_INTERVAL = 2000; // 2 seconds
 
-// Shared sizing constants for accessibility
+// Shared sizing constants for accessibility - oversized tap zones for reliable touch/palm registration
 const YES_NO_BUTTON_STYLE = {
-  width: 'min(32vw, 42vh)',
-  height: 'min(32vw, 42vh)',
-  minWidth: '220px',
-  minHeight: '220px',
+  width: 'min(34vw, 44vh)',
+  height: 'min(34vw, 44vh)',
+  minWidth: '240px',
+  minHeight: '240px',
   touchAction: 'manipulation',
+  cursor: 'pointer',
 };
 
 const CARD_EMOJI_BUTTON_STYLE = {
-  width: 'min(50vw, 480px)',
-  height: 'min(50vw, 480px)',
-  minWidth: '280px',
-  minHeight: '280px',
+  width: 'min(52vw, 500px)',
+  height: 'min(52vw, 500px)',
+  minWidth: '300px',
+  minHeight: '300px',
   touchAction: 'manipulation',
+  cursor: 'pointer',
 };
 
 const LABEL_STYLE = {
@@ -130,16 +132,16 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
     settleAnimationTimeoutRef.current = setTimeout(() => {
       setSettleAnimating(false);
       settleAnimationTimeoutRef.current = null;
-    }, 600);
+    }, 800); // Match 800ms animation duration
   }, []);
 
-  // Smooth momentum-based settle animation - MUCH SLOWER (2-3x)
+  // Smooth momentum-based settle animation - soft, slow, gentle glide (800ms target)
   const animateSettle = (initialVelocity, initialOffset) => {
-    const friction = 0.96; // SLOWER deceleration (was 0.92)
-    const minVelocity = 0.3; // Lower threshold for smoother stopping
+    const friction = 0.97; // High friction for gentle deceleration
+    const minVelocity = 0.2; // Very low threshold for ultra-smooth stopping
     const cardHeight = window.innerHeight;
     
-    let velocity = initialVelocity * 0.5; // Reduce initial velocity for slower animation
+    let velocity = initialVelocity * 0.35; // Reduced initial velocity for slower, softer animation
     let offset = initialOffset;
     
     const animate = () => {
@@ -358,6 +360,7 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
             onMouseLeave={handleYesRelease}
             onTouchStart={handleYesPress}
             onTouchEnd={handleYesRelease}
+            aria-label={leftButtons.top.speakText}
             className={`flex flex-col items-center justify-center rounded-full outline-none focus:outline-none shadow-2xl border-8 border-white/40 overflow-hidden ${yesButtonAnimating ? 'spin-on-press' : ''}`}
             style={{
               ...YES_NO_BUTTON_STYLE,
@@ -384,6 +387,7 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
             onMouseLeave={handleNoRelease}
             onTouchStart={handleNoPress}
             onTouchEnd={handleNoRelease}
+            aria-label={leftButtons.bottom.speakText}
             className={`flex flex-col items-center justify-center rounded-full outline-none focus:outline-none shadow-2xl border-8 border-white/40 overflow-hidden ${noButtonAnimating ? 'spin-on-press' : ''}`}
             style={{
               ...YES_NO_BUTTON_STYLE,
@@ -422,7 +426,7 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
             className={`absolute inset-0 w-full h-full ${settleAnimating ? 'settle-bounce' : ''}`}
             style={{
               transform: isDragging || isAnimating ? `translateY(${dragOffset}px)` : 'translateY(0)',
-              transition: isDragging || isAnimating ? 'none' : 'transform 1.2s cubic-bezier(0.25, 0.1, 0.25, 1.05)' // MUCH SLOWER with slight overshoot
+              transition: isDragging || isAnimating ? 'none' : 'transform 800ms ease-in-out' // Soft, slow, gentle glide - 800ms constant easing
             }}
           >
             {/* Previous card (above current) */}
@@ -456,6 +460,7 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
                 onMouseLeave={handleCardRelease}
                 onTouchStart={handleCardPress}
                 onTouchEnd={handleCardRelease}
+                aria-label={currentCard.speakText}
                 className={`rounded-full bg-white/95 backdrop-blur flex items-center justify-center outline-none focus:outline-none shadow-2xl border-8 border-black/20 overflow-hidden ${cardButtonAnimating ? 'bounce-on-press' : ''}`}
                 style={CARD_EMOJI_BUTTON_STYLE}
               >
