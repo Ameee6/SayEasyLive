@@ -18,6 +18,9 @@ const CARD_COLORS = [
 const YES_BUTTON_COLOR = '#00E676'; // Bright Lime Green
 const NO_BUTTON_COLOR = '#FF6D00';  // Bright Orange
 
+// Thumbnail sidebar configuration
+const THUMBNAIL_SIZE_BREAKPOINT = 7; // Cards above this threshold get smaller thumbnails
+
 // Long-press configuration
 const LONG_PRESS_THRESHOLD = 800; // 0.8 seconds
 const REPEAT_INTERVAL = 2000; // 2 seconds
@@ -292,77 +295,90 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
           </button>
         </div>
 
-        {/* Right Panel - 2/3 width - Full-screen card swiper with spring physics */}
-        <div
-          className="w-2/3 flex items-center justify-center overflow-hidden relative"
-          style={{ touchAction: 'none' }}
-          onWheel={handleWheel}
-        >
-          {/* Animated card container using framer-motion */}
-          <AnimatePresence initial={false} custom={direction}>
-            <motion.div
-              key={currentIndex}
-              custom={direction}
-              initial={(dir) => ({
-                y: dir === 0 ? 0 : dir > 0 ? '-100%' : '100%',
-              })}
-              animate={{
-                y: 0,
-              }}
-              exit={(dir) => ({
-                y: dir > 0 ? '100%' : '-100%',
-              })}
-              transition={TRANSITION_CONFIG}
-              drag="y"
-              dragConstraints={{ top: 0, bottom: 0 }}
-              dragElastic={0.3}
-              onDragEnd={handleDragEnd}
-              className="absolute inset-0 w-full h-full flex flex-col items-center justify-center p-8"
-              style={{ backgroundColor: getCardColor(currentIndex) }}
-            >
-              {/* Huge tappable emoji circle - enlarged touch zone */}
-              <button
-                onMouseDown={handleCardPress}
-                onMouseUp={handleCardRelease}
-                onMouseLeave={handleCardRelease}
-                onTouchStart={handleCardPress}
-                onTouchEnd={handleCardRelease}
-                aria-label={currentCard.speakText}
-                className={`rounded-full bg-white/95 backdrop-blur flex items-center justify-center outline-none focus:outline-none shadow-2xl border-8 border-black/20 overflow-hidden ${cardButtonAnimating ? 'bounce-on-press' : ''}`}
-                style={CARD_EMOJI_BUTTON_STYLE}
-              >
-                <div style={{ fontSize: 'min(28vw, 14rem)', lineHeight: 1 }}>{currentCard.emoji}</div>
-              </button>
-
-              {/* Title/Label - much larger text */}
-              <div 
-                className="font-bold text-center px-4 my-6"
-                style={{ 
-                  fontSize: 'clamp(48px, 14vw, 160px)',
-                  ...LABEL_STYLE
-                }}
-              >
-                {currentCard.label}
-              </div>
-            </motion.div>
-          </AnimatePresence>
-
-          {/* Position dots - larger for accessibility */}
-          <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-4 z-20">
-            {cards.map((_, idx) => (
+        {/* Right Panel - 2/3 width - Split into card area (3/4) and thumbnail sidebar (1/4) */}
+        <div className="w-2/3 flex h-full">
+          {/* Card scroll area - 3/4 of right panel */}
+          <div
+            className="w-3/4 flex items-center justify-center overflow-hidden relative"
+            style={{ touchAction: 'none' }}
+            onWheel={handleWheel}
+          >
+            {/* Animated card container using framer-motion */}
+            <AnimatePresence initial={false} custom={direction}>
               <motion.div
-                key={idx}
+                key={currentIndex}
+                custom={direction}
+                initial={(dir) => ({
+                  y: dir === 0 ? 0 : dir > 0 ? '-100%' : '100%',
+                })}
                 animate={{
-                  scale: idx === currentIndex ? 1.1 : 1,
-                  backgroundColor: idx === currentIndex ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.5)',
+                  y: 0,
                 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-                className={`rounded-full shadow-lg ${
-                  idx === currentIndex ? 'w-12 h-12' : 'w-8 h-8'
-                }`}
-              />
-            ))}
+                exit={(dir) => ({
+                  y: dir > 0 ? '100%' : '-100%',
+                })}
+                transition={TRANSITION_CONFIG}
+                drag="y"
+                dragConstraints={{ top: 0, bottom: 0 }}
+                dragElastic={0.3}
+                onDragEnd={handleDragEnd}
+                className="absolute inset-0 w-full h-full flex flex-col items-center justify-center p-8"
+                style={{ backgroundColor: getCardColor(currentIndex) }}
+              >
+                {/* Huge tappable emoji circle - enlarged touch zone */}
+                <button
+                  onMouseDown={handleCardPress}
+                  onMouseUp={handleCardRelease}
+                  onMouseLeave={handleCardRelease}
+                  onTouchStart={handleCardPress}
+                  onTouchEnd={handleCardRelease}
+                  aria-label={currentCard.speakText}
+                  className={`rounded-full bg-white/95 backdrop-blur flex items-center justify-center outline-none focus:outline-none shadow-2xl border-8 border-black/20 overflow-hidden ${cardButtonAnimating ? 'bounce-on-press' : ''}`}
+                  style={CARD_EMOJI_BUTTON_STYLE}
+                >
+                  <div style={{ fontSize: 'min(28vw, 14rem)', lineHeight: 1 }}>{currentCard.emoji}</div>
+                </button>
+
+                {/* Title/Label - much larger text */}
+                <div 
+                  className="font-bold text-center px-4 my-6"
+                  style={{ 
+                    fontSize: 'clamp(48px, 14vw, 160px)',
+                    ...LABEL_STYLE
+                  }}
+                >
+                  {currentCard.label}
+                </div>
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Position dots - larger for accessibility */}
+            <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-4 z-20">
+              {cards.map((_, idx) => (
+                <motion.div
+                  key={idx}
+                  animate={{
+                    scale: idx === currentIndex ? 1.1 : 1,
+                    backgroundColor: idx === currentIndex ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.5)',
+                  }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                  className={`rounded-full shadow-lg ${
+                    idx === currentIndex ? 'w-12 h-12' : 'w-8 h-8'
+                  }`}
+                />
+              ))}
+            </div>
           </div>
+
+          {/* Vertical dividing line */}
+          <div className="w-1 bg-black" />
+
+          {/* Thumbnail sidebar - 1/4 of right panel */}
+          <ThumbnailSidebar 
+            cards={cards} 
+            currentIndex={currentIndex} 
+            getCardColor={getCardColor} 
+          />
         </div>
       </div>
     </div>
@@ -395,6 +411,80 @@ function DoubleTapExit({ onExit }) {
     >
       Double-tap to exit
     </button>
+  );
+}
+
+// Thumbnail sidebar component for card preview/orientation
+function ThumbnailSidebar({ cards, currentIndex, getCardColor }) {
+  return (
+    <div 
+      className="flex-1 flex flex-col items-center justify-center py-4 px-2 overflow-hidden"
+      style={{ 
+        backgroundColor: '#f5f5f5',
+        touchAction: 'none', // Not interactive - purely visual
+        pointerEvents: 'none' // Prevent any interaction
+      }}
+      aria-hidden="true" // Hide from screen readers since it's purely visual
+    >
+      {/* Vertically stacked thumbnails */}
+      <div className="flex flex-col gap-2 w-full max-h-full overflow-hidden">
+        {cards.map((card, idx) => {
+          const isActive = idx === currentIndex;
+          const cardColor = getCardColor(idx);
+          
+          return (
+            <div
+              key={idx}
+              className={`
+                flex flex-col items-center justify-center
+                rounded-lg
+                transition-all duration-300 ease-in-out
+                ${isActive ? 'ring-4 ring-black ring-offset-2 scale-105' : 'opacity-70'}
+              `}
+              style={{
+                border: `4px solid ${cardColor}`,
+                backgroundColor: isActive ? '#ffffff' : '#fafafa',
+                minHeight: '60px',
+                maxHeight: cards.length > THUMBNAIL_SIZE_BREAKPOINT ? '80px' : '100px',
+                flex: '1 1 0',
+                boxShadow: isActive 
+                  ? '0 4px 12px rgba(0,0,0,0.3), inset 0 0 0 2px rgba(0,0,0,0.1)' 
+                  : '0 2px 4px rgba(0,0,0,0.1)',
+              }}
+            >
+              {/* Thumbnail emoji */}
+              <div 
+                className="leading-none"
+                style={{ 
+                  fontSize: cards.length > THUMBNAIL_SIZE_BREAKPOINT ? 'clamp(16px, 3vw, 28px)' : 'clamp(20px, 4vw, 36px)',
+                }}
+              >
+                {card.emoji}
+              </div>
+              
+              {/* Thumbnail label */}
+              <div 
+                className={`
+                  font-bold text-center leading-tight
+                  ${isActive ? 'text-black' : 'text-gray-600'}
+                `}
+                style={{ 
+                  fontSize: cards.length > THUMBNAIL_SIZE_BREAKPOINT ? 'clamp(10px, 1.5vw, 14px)' : 'clamp(12px, 2vw, 18px)',
+                  fontFamily: "'Quicksand', sans-serif",
+                  maxWidth: '100%',
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
+                  whiteSpace: 'nowrap',
+                  padding: '0 4px',
+                }}
+              >
+                {card.label}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 
