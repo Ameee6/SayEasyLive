@@ -2,20 +2,35 @@
 
 * {
   -webkit-tap-highlight-color: transparent;
-  touch-action: none; /* Prevent all default touch behaviors */
   -webkit-touch-callout: none; /* Prevent iOS callout */
 }
 
 html, body {
   margin: 0;
   padding: 0;
+  width: 100%;
+  font-family: 'Quicksand', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Default state: full-screen app mode - prevent scrolling */
+html, body, #root {
+  height: 100%;
+}
+
+body {
   overflow: hidden;
   position: fixed;
-  width: 100%;
-  height: 100%;
-  font-family: 'Quicksand', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  overscroll-behavior: none; /* Prevent pull-to-refresh */
-  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: none;
+}
+
+#root {
+  overflow: hidden;
+}
+
+/* Prevent touch behaviors by default for app views */
+body:not(:has(.scrollable-page)) * {
+  touch-action: none;
 }
 
 /* Prevent text selection for better touch UX */
@@ -24,15 +39,6 @@ html, body {
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
-}
-
-/* Prevent iOS rubber-band scrolling */
-#root {
-  position: fixed;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  overscroll-behavior: none;
 }
 
 /* High contrast mode support */
@@ -95,13 +101,27 @@ html, body {
 }
 
 /* Allow scrolling for homepage and settings pages */
-.scrollable-page {
-  position: relative !important;
+/* When scrollable-page is present, override the fixed body/root */
+body:has(.scrollable-page) {
   overflow-y: auto !important;
   overflow-x: hidden !important;
+  position: static !important;
+  height: auto !important;
+}
+
+body:has(.scrollable-page) #root {
+  overflow: visible !important;
+  height: auto !important;
+}
+
+.scrollable-page {
+  min-height: 100vh;
+  min-height: 100dvh; /* Dynamic viewport height for mobile browsers */
+  padding-bottom: env(safe-area-inset-bottom, 20px); /* iOS safe area padding with fallback */
+}
+
+/* Ensure all children of scrollable-page allow touch scrolling */
+.scrollable-page,
+.scrollable-page * {
   touch-action: pan-y !important;
-  -webkit-overflow-scrolling: touch;
-  height: 100vh !important;
-  height: 100dvh !important; /* Dynamic viewport height for mobile browsers */
-  padding-bottom: env(safe-area-inset-bottom, 0); /* iOS safe area padding */
 }
