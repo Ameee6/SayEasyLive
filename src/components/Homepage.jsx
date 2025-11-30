@@ -32,24 +32,6 @@ function Homepage({ onNavigateToSettings, onNavigateToMain }) {
             >
               Simple, Stable Communication Tools for All.
             </p>
-            {/* Scroll indicator */}
-            <div className="mt-8 animate-bounce">
-              <span className="text-gray-400 text-sm block mb-2">Scroll to explore</span>
-              <svg 
-                className="w-6 h-6 mx-auto text-gray-400" 
-                fill="none" 
-                stroke="currentColor" 
-                viewBox="0 0 24 24"
-                aria-hidden="true"
-              >
-                <path 
-                  strokeLinecap="round" 
-                  strokeLinejoin="round" 
-                  strokeWidth={2} 
-                  d="M19 14l-7 7m0 0l-7-7m7 7V3" 
-                />
-              </svg>
-            </div>
           </section>
 
           {/* Info Cards Section */}
