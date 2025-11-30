@@ -1,6 +1,13 @@
 function Homepage({ onNavigateToSettings, onNavigateToMain }) {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white flex flex-col scrollable-page">
+      {/* Device Info Banner */}
+      <div className="bg-blue-900/80 border-b border-blue-700 px-4 py-3 text-center flex-shrink-0">
+        <p className="text-sm md:text-base text-blue-100">
+          <span className="font-semibold">📱 SayEasy</span> is designed for tablets and large touch screens. Card/button editing works on mobile, but main user experience is best on larger screens.
+        </p>
+      </div>
+
       {/* Top Banner with Logo */}
       <header className="bg-gradient-to-r from-purple-700 via-blue-600 to-purple-700 py-8 px-6 shadow-lg flex-shrink-0">
         <div className="max-w-6xl mx-auto flex items-center justify-center">
@@ -34,11 +41,11 @@ function Homepage({ onNavigateToSettings, onNavigateToMain }) {
             </p>
           </section>
 
-          {/* Info Cards Section */}
+          {/* Info Cards Section - On mobile, "A Calm Space" shows first for immediate caregiver readability */}
           <section className="grid gap-8 md:grid-cols-2">
             
-            {/* Staying in SayEasy Card */}
-            <div className="bg-gray-800 rounded-2xl p-6 md:p-8 shadow-xl border border-gray-700 hover:border-purple-500 transition-colors">
+            {/* Staying in SayEasy Card - Shows second on mobile (order-2), first on desktop (md:order-1) */}
+            <div className="order-2 md:order-1 bg-gray-800 rounded-2xl p-6 md:p-8 shadow-xl border border-gray-700 hover:border-purple-500 transition-colors">
               <div className="flex items-center mb-6">
                 <span className="text-4xl mr-4">🔒</span>
                 <h3 
@@ -74,8 +81,8 @@ function Homepage({ onNavigateToSettings, onNavigateToMain }) {
               </ul>
             </div>
 
-            {/* A Calm Space Card */}
-            <div className="bg-gray-800 rounded-2xl p-6 md:p-8 shadow-xl border border-gray-700 hover:border-blue-500 transition-colors">
+            {/* A Calm Space Card - Shows first on mobile (order-1), second on desktop (md:order-2) */}
+            <div className="order-1 md:order-2 bg-gray-800 rounded-2xl p-6 md:p-8 shadow-xl border border-gray-700 hover:border-blue-500 transition-colors">
               <div className="flex items-center mb-6">
                 <span className="text-4xl mr-4">💙</span>
                 <h3 

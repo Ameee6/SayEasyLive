@@ -2,6 +2,13 @@ import { useState, useRef, useEffect } from 'react';
 import { loadDashboardSettings, saveDashboardSettings, loadRemovedCards, saveRemovedCards } from '../utils/storage';
 import { saveImage, loadAllImages, fileToDataUrl, resizeImage } from '../utils/imageStorage';
 
+/*
+ * FUTURE ENHANCEMENT (Next Phase):
+ * - Backend image upload: Store images on server instead of IndexedDB for cross-device access
+ * - Multi-device login: Allow users to sync settings and cards across devices
+ * Note: These features are planned for a future release and are not implemented in this version.
+ */
+
 // Color palette for scroll cards (matching MainView)
 const CARD_COLORS = [
   '#8B5CF6',  // Bright Purple
@@ -271,7 +278,7 @@ function SettingsDashboard({ onSave, onBack }) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white flex flex-col">
+    <div className="min-h-screen bg-gray-900 text-white flex flex-col scrollable-page">
       {/* Hidden file input */}
       <input
         ref={fileInputRef}
@@ -282,21 +289,35 @@ function SettingsDashboard({ onSave, onBack }) {
         onChange={handleFileSelect}
       />
 
+      {/* Device Info Banner */}
+      <div className="bg-blue-900/80 border-b border-blue-700 px-4 py-3 text-center flex-shrink-0">
+        <p className="text-sm md:text-base text-blue-100">
+          <span className="font-semibold">📱 SayEasy</span> is designed for tablets and large touch screens. Card/button editing works on mobile, but main user experience is best on larger screens.
+        </p>
+      </div>
+
+      {/* Mobile Landscape Recommendation */}
+      <div className="md:hidden bg-yellow-900/60 border-b border-yellow-700 px-4 py-2 text-center flex-shrink-0">
+        <p className="text-sm text-yellow-100">
+          <span className="font-semibold">📐 Recommended:</span> Use landscape mode (turn your phone sideways) or a tablet for best editing experience.
+        </p>
+      </div>
+
       {/* Header */}
-      <div className="flex justify-between items-center p-4 bg-gray-800 border-b border-gray-700">
-        <h1 className="text-2xl font-bold">SayEasy Settings Dashboard</h1>
+      <div className="flex justify-between items-center p-4 bg-gray-800 border-b border-gray-700 flex-shrink-0">
+        <h1 className="text-xl md:text-2xl font-bold">SayEasy Settings Dashboard</h1>
         <button
           onClick={onBack}
-          className="px-4 py-2 bg-gray-600 rounded-lg hover:bg-gray-500 text-lg"
+          className="px-3 py-2 md:px-4 md:py-2 bg-gray-600 rounded-lg hover:bg-gray-500 text-base md:text-lg"
         >
           ← Back
         </button>
       </div>
 
-      {/* Main content area - split into preview and sidebar */}
-      <div className="flex flex-1 overflow-hidden">
-        {/* Left: Live Preview Panel */}
-        <div className="flex-1 flex flex-col p-4 overflow-auto">
+      {/* Main content area - split into preview and sidebar on larger screens, stacked on mobile */}
+      <div className="flex flex-col md:flex-row flex-1 md:overflow-hidden">
+        {/* Left: Live Preview Panel - Hidden on mobile to prioritize editing */}
+        <div className="hidden md:flex flex-1 flex-col p-4 overflow-auto">
           <h2 className="text-xl font-semibold mb-4 text-center">Live Preview</h2>
           
           {/* Preview layout mimicking main app */}
@@ -375,8 +396,33 @@ function SettingsDashboard({ onSave, onBack }) {
           </div>
         </div>
 
-        {/* Right: Edit Panel */}
-        <div className="w-96 bg-gray-800 border-l border-gray-600 flex flex-col overflow-hidden">
+        {/* Right: Edit Panel - Full width on mobile, sidebar on larger screens */}
+        <div className="w-full md:w-96 bg-gray-800 md:border-l border-gray-600 flex flex-col">
+          {/* Main Buttons Section - Mobile only */}
+          <div className="md:hidden p-4 border-b border-gray-600">
+            <h3 className="text-lg font-semibold mb-3">Main Buttons</h3>
+            <div className="flex justify-around items-center">
+              <EditableButton
+                item={settings.mainButtons.top}
+                imageId={settings.mainButtons.top.imageId}
+                color={YES_BUTTON_COLOR}
+                onUpload={() => handleImageUpload('main-top')}
+                onEditLabel={() => startEditing('main-top')}
+                isEditing={editingItem?.type === 'main-top'}
+                renderContent={renderButtonContent}
+              />
+              <EditableButton
+                item={settings.mainButtons.bottom}
+                imageId={settings.mainButtons.bottom.imageId}
+                color={NO_BUTTON_COLOR}
+                onUpload={() => handleImageUpload('main-bottom')}
+                onEditLabel={() => startEditing('main-bottom')}
+                isEditing={editingItem?.type === 'main-bottom'}
+                renderContent={renderButtonContent}
+              />
+            </div>
+          </div>
+
           {/* Card count selector */}
           <div className="p-4 border-b border-gray-600">
             <h3 className="text-lg font-semibold mb-3">Number of Scroll Cards</h3>
@@ -398,7 +444,7 @@ function SettingsDashboard({ onSave, onBack }) {
           </div>
 
           {/* Scroll cards editor */}
-          <div className="flex-1 overflow-y-auto p-4">
+          <div className="flex-1 p-4 md:overflow-y-auto">
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-lg font-semibold">Edit Scroll Cards</h3>
               {settings.scrollCards.length < 10 && (
