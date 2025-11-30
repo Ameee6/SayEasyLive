@@ -3,7 +3,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { speak } from '../utils/speech';
 import { defaultLeftButtons } from '../data/defaultCards';
 import { loadAllImages } from '../utils/imageStorage';
-import { enterFullscreen, exitFullscreen } from '../utils/fullscreen';
+import { enterFullscreen, exitFullscreen, isFullscreenSupported } from '../utils/fullscreen';
 
 // 7 distinct bright solid colors - no gradients (using hex values for reliability)
 const CARD_COLORS = [
@@ -142,6 +142,11 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
   // Note: Browser fullscreen requires user gesture on most platforms,
   // so we set up a one-time click listener to enter fullscreen on first interaction
   useEffect(() => {
+    // Only set up fullscreen handling if the API is supported
+    if (!isFullscreenSupported()) {
+      return;
+    }
+
     const handleFirstInteraction = () => {
       enterFullscreen();
       document.removeEventListener('click', handleFirstInteraction);

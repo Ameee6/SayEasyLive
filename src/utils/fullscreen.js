@@ -5,7 +5,8 @@
 
 /**
  * Request fullscreen mode for the document element
- * Returns true if request was initiated, false if not supported
+ * Returns true if the API is supported (request initiated), false if not supported
+ * Note: The actual fullscreen may still fail due to browser security restrictions (requires user gesture)
  */
 export function enterFullscreen() {
   const elem = document.documentElement;
@@ -35,33 +36,23 @@ export function enterFullscreen() {
 
 /**
  * Exit fullscreen mode
- * Returns true if exit was initiated, false if not in fullscreen or not supported
+ * Browser handles the case when not in fullscreen internally
  */
 export function exitFullscreen() {
-  if (!isFullscreen()) {
-    return false;
-  }
-  
   if (document.exitFullscreen) {
     document.exitFullscreen().catch(() => {
-      // Exit failed - this shouldn't normally happen
+      // Exit failed or not in fullscreen - browser handles this internally
     });
-    return true;
   } else if (document.webkitExitFullscreen) {
     // Safari/older WebKit
     document.webkitExitFullscreen();
-    return true;
   } else if (document.mozCancelFullScreen) {
     // Firefox
     document.mozCancelFullScreen();
-    return true;
   } else if (document.msExitFullscreen) {
     // IE/Edge
     document.msExitFullscreen();
-    return true;
   }
-  
-  return false;
 }
 
 /**
