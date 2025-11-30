@@ -1,4 +1,27 @@
+import { useRef, useEffect } from 'react';
+
 function Homepage({ onNavigateToSettings, onNavigateToMain }) {
+  const highlightTimeoutRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (highlightTimeoutRef.current) {
+        clearTimeout(highlightTimeoutRef.current);
+      }
+    };
+  }, []);
+
+  const scrollToSetupTips = () => {
+    const element = document.getElementById('caregiver-setup-tips');
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+      element.classList.add('ring-2', 'ring-yellow-400');
+      highlightTimeoutRef.current = setTimeout(() => {
+        element.classList.remove('ring-2', 'ring-yellow-400');
+      }, 2000);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white flex flex-col scrollable-page">
       {/* Device Info Banner */}
@@ -44,7 +67,7 @@ function Homepage({ onNavigateToSettings, onNavigateToMain }) {
           {/* Info Cards Section - On mobile, "A Calm Space" shows first for immediate caregiver readability */}
           <section className="grid gap-8 md:grid-cols-2">
             
-            {/* Staying in SayEasy Card - Shows second on mobile (order-2), first on desktop (md:order-1) */}
+            {/* Safety & Stability Tools Card - Shows second on mobile (order-2), first on desktop (md:order-1) */}
             <div className="order-2 md:order-1 bg-gray-800 rounded-2xl p-6 md:p-8 shadow-xl border border-gray-700 hover:border-purple-500 transition-colors">
               <div className="flex items-center mb-6">
                 <span className="text-4xl mr-4">🔒</span>
@@ -52,11 +75,11 @@ function Homepage({ onNavigateToSettings, onNavigateToMain }) {
                   className="text-2xl md:text-3xl font-bold text-purple-300"
                   style={{ fontFamily: "'Quicksand', sans-serif" }}
                 >
-                  Staying in SayEasy
+                  Safety & Stability Tools
                 </h3>
               </div>
               <p className="text-lg text-gray-300 mb-6">
-                Safety & Stability Tools
+                Keep users focused and secure within SayEasy.
               </p>
               <ul className="space-y-4 text-lg">
                 <li className="flex items-start">
@@ -73,12 +96,20 @@ function Homepage({ onNavigateToSettings, onNavigateToMain }) {
                   <div>
                     <span className="font-semibold text-white">Use Your Device's "Lock to App" Feature</span>
                     <p className="text-gray-400 text-base mt-1">
-                      <strong>iOS:</strong> Settings → Accessibility → Guided Access<br />
+                      <strong>iOS:</strong> Settings → Accessibility → Guided Access
+                    </p>
+                    <p className="text-gray-400 text-base mt-1">
                       <strong>Android:</strong> Settings → Security → App Pinning
                     </p>
                   </div>
                 </li>
               </ul>
+              <button
+                onClick={scrollToSetupTips}
+                className="mt-6 text-sm text-purple-300 hover:text-purple-200 underline underline-offset-2 transition-colors flex items-center gap-1"
+              >
+                <span>↓</span> See Caregiver Setup Tips
+              </button>
             </div>
 
             {/* A Calm Space Card - Shows first on mobile (order-1), second on desktop (md:order-2) */}
@@ -160,27 +191,66 @@ function Homepage({ onNavigateToSettings, onNavigateToMain }) {
                 </span>
               </button>
             </div>
+          </section>
 
-            {/* Secondary Links */}
-            <div className="grid gap-4 md:grid-cols-3 max-w-4xl mx-auto mt-8">
-              <div className="p-5 bg-gray-800 rounded-xl border border-gray-700 text-center opacity-75">
-                <span className="text-2xl mb-2 block">📋</span>
-                <span className="text-lg font-semibold text-gray-300 block">Getting Started Checklist</span>
-                <span className="text-sm text-gray-500 mt-1 block">Coming Soon</span>
-              </div>
-              
-              <div className="p-5 bg-gray-800 rounded-xl border border-gray-700 text-center opacity-75">
-                <span className="text-2xl mb-2 block">👥</span>
-                <span className="text-lg font-semibold text-gray-300 block">Caregiver Guide</span>
-                <span className="text-sm text-gray-500 mt-1 block">Coming Soon</span>
-              </div>
-              
-              <div className="p-5 bg-gray-800 rounded-xl border border-gray-700 text-center opacity-75">
-                <span className="text-2xl mb-2 block">❓</span>
-                <span className="text-lg font-semibold text-gray-300 block">FAQ</span>
-                <span className="text-sm text-gray-500 mt-1 block">Coming Soon</span>
-              </div>
+          {/* Caregiver Setup Tips */}
+          <section 
+            id="caregiver-setup-tips"
+            className="bg-gray-800 rounded-2xl p-6 md:p-8 shadow-xl border border-gray-700 transition-all"
+          >
+            <div className="flex items-center mb-6">
+              <span className="text-4xl mr-4">📋</span>
+              <h3 
+                className="text-2xl md:text-3xl font-bold text-green-300"
+                style={{ fontFamily: "'Quicksand', sans-serif" }}
+              >
+                Caregiver Setup Tips
+              </h3>
             </div>
+            <p className="text-lg text-gray-300 mb-6">
+              Quick essentials to get SayEasy ready for your user.
+            </p>
+            <ul className="space-y-4 text-lg">
+              <li className="flex items-start">
+                <span className="text-green-400 text-2xl mr-3 flex-shrink-0">1.</span>
+                <div>
+                  <span className="font-semibold text-white">Start Simple</span>
+                  <p className="text-gray-400 text-base mt-1">
+                    Begin with 2–3 scroll card buttons to keep it simple for users.
+                  </p>
+                </div>
+              </li>
+              <li className="flex items-start">
+                <span className="text-green-400 text-2xl mr-3 flex-shrink-0">2.</span>
+                <div>
+                  <span className="font-semibold text-white">Enable Device Lock</span>
+                  <p className="text-gray-400 text-base mt-1">
+                    <strong>iOS:</strong> Settings → Accessibility → Guided Access
+                  </p>
+                  <p className="text-gray-400 text-base mt-1">
+                    <strong>Android:</strong> Settings → Security → App Pinning
+                  </p>
+                </div>
+              </li>
+              <li className="flex items-start">
+                <span className="text-green-400 text-2xl mr-3 flex-shrink-0">3.</span>
+                <div>
+                  <span className="font-semibold text-white">Add to Home Screen (iOS)</span>
+                  <p className="text-gray-400 text-base mt-1">
+                    Safari → Share icon → Add to Home Screen
+                  </p>
+                </div>
+              </li>
+              <li className="flex items-start">
+                <span className="text-green-400 text-2xl mr-3 flex-shrink-0">4.</span>
+                <div>
+                  <span className="font-semibold text-white">Upload Familiar Content</span>
+                  <p className="text-gray-400 text-base mt-1">
+                    Add images and phrases that are meaningful to your user for easier recognition.
+                  </p>
+                </div>
+              </li>
+            </ul>
           </section>
 
         </div>
