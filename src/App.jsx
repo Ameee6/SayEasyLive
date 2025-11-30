@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
+import Homepage from './components/Homepage';
 import MainView from './components/MainView';
 import SettingsDashboard from './components/SettingsDashboard';
 import { initSpeech } from './utils/speech';
 import { loadDashboardSettings, saveDashboardSettings } from './utils/storage';
 
 function App() {
-  const [currentView, setCurrentView] = useState('main'); // 'main' or 'settings'
+  const [currentView, setCurrentView] = useState('home'); // 'home', 'main', or 'settings'
   const [dashboardSettings, setDashboardSettings] = useState(loadDashboardSettings());
 
   // Initialize speech synthesis on mount
@@ -49,8 +50,8 @@ function App() {
       document.msExitFullscreen();
     }
 
-    // Return to settings after exiting fullscreen
-    setCurrentView('settings');
+    // Return to homepage after exiting fullscreen
+    setCurrentView('home');
   };
 
   // Listen for fullscreen changes (e.g., user pressing ESC)
@@ -64,7 +65,7 @@ function App() {
       );
 
       if (!isCurrentlyFullscreen && currentView === 'main') {
-        setCurrentView('settings');
+        setCurrentView('home');
       }
     };
 
@@ -90,18 +91,37 @@ function App() {
     setTimeout(enterFullscreen, 100);
   };
 
-  // Handle going back from settings to main
-  const handleBackToMain = () => {
+  // Handle going back from settings to homepage
+  const handleBackToHome = () => {
+    setCurrentView('home');
+  };
+
+  // Handle navigation from homepage to settings
+  const handleNavigateToSettings = () => {
+    setCurrentView('settings');
+  };
+
+  // Handle navigation from homepage to main communication app
+  const handleNavigateToMain = () => {
     setCurrentView('main');
     setTimeout(enterFullscreen, 100);
   };
 
   // Render appropriate view
+  if (currentView === 'home') {
+    return (
+      <Homepage
+        onNavigateToSettings={handleNavigateToSettings}
+        onNavigateToMain={handleNavigateToMain}
+      />
+    );
+  }
+
   if (currentView === 'settings') {
     return (
       <SettingsDashboard
         onSave={handleSaveSettings}
-        onBack={handleBackToMain}
+        onBack={handleBackToHome}
       />
     );
   }

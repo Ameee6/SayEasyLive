@@ -1,6 +1,4 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 * {
   -webkit-tap-highlight-color: transparent;
@@ -94,4 +92,12 @@ html, body {
   animation: glowPulse 1.5s ease-in-out infinite, borderPulse 1.5s ease-in-out infinite;
   outline-style: solid;
   outline-color: rgba(255, 255, 255, 0.9);
+}
+
+/* Allow scrolling for homepage and settings pages */
+.scrollable-page {
+  position: relative !important;
+  overflow-y: auto !important;
+  touch-action: pan-y !important;
+  -webkit-overflow-scrolling: touch;
 }
