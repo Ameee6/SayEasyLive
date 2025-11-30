@@ -7,6 +7,7 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
   const [isDragging, setIsDragging] = useState(false);
   const [startY, setStartY] = useState(0);
   const [currentY, setCurrentY] = useState(0);
+  const [slideDirection, setSlideDirection] = useState(null); // 'up' or 'down'
   const dragThreshold = 50; // pixels to trigger flip
 
   const handleSpeak = (text) => {
@@ -36,10 +37,18 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
     if (Math.abs(deltaY) > dragThreshold) {
       if (deltaY > 0) {
         // Swipe up - next item
-        setCurrentIndex((prev) => (prev + 1) % cards.length);
+        setSlideDirection('up');
+        setTimeout(() => {
+          setCurrentIndex((prev) => (prev + 1) % cards.length);
+          setSlideDirection(null);
+        }, 300);
       } else {
         // Swipe down - previous item
-        setCurrentIndex((prev) => (prev - 1 + cards.length) % cards.length);
+        setSlideDirection('down');
+        setTimeout(() => {
+          setCurrentIndex((prev) => (prev - 1 + cards.length) % cards.length);
+          setSlideDirection(null);
+        }, 300);
       }
     }
 
@@ -67,9 +76,17 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
 
     if (Math.abs(deltaY) > dragThreshold) {
       if (deltaY > 0) {
-        setCurrentIndex((prev) => (prev + 1) % cards.length);
+        setSlideDirection('up');
+        setTimeout(() => {
+          setCurrentIndex((prev) => (prev + 1) % cards.length);
+          setSlideDirection(null);
+        }, 300);
       } else {
-        setCurrentIndex((prev) => (prev - 1 + cards.length) % cards.length);
+        setSlideDirection('down');
+        setTimeout(() => {
+          setCurrentIndex((prev) => (prev - 1 + cards.length) % cards.length);
+          setSlideDirection(null);
+        }, 300);
       }
     }
 
@@ -81,12 +98,22 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
   // Wheel/scroll handler for desktop
   const handleWheel = (e) => {
     e.preventDefault();
+    if (slideDirection) return; // Prevent rapid scrolling during animation
+
     if (e.deltaY > 0) {
       // Scroll down - next item
-      setCurrentIndex((prev) => (prev + 1) % cards.length);
+      setSlideDirection('up');
+      setTimeout(() => {
+        setCurrentIndex((prev) => (prev + 1) % cards.length);
+        setSlideDirection(null);
+      }, 300);
     } else if (e.deltaY < 0) {
       // Scroll up - previous item
-      setCurrentIndex((prev) => (prev - 1 + cards.length) % cards.length);
+      setSlideDirection('down');
+      setTimeout(() => {
+        setCurrentIndex((prev) => (prev - 1 + cards.length) % cards.length);
+        setSlideDirection(null);
+      }, 300);
     }
   };
 
@@ -142,9 +169,9 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
           </button>
         </div>
 
-        {/* Right Panel - 2/3 width - TikTok-style full-screen cards */}
+        {/* Right Panel - 2/3 width - Card slider */}
         <div
-          className={`w-2/3 flex items-center justify-center overflow-hidden relative transition-colors ${cardColor}`}
+          className={`w-2/3 flex items-center justify-center overflow-hidden relative transition-colors duration-500 ${cardColor}`}
           style={{ touchAction: 'none' }}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
@@ -155,39 +182,54 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
           onMouseLeave={handleMouseUp}
           onWheel={handleWheel}
         >
-          {/* Full-screen card - TikTok style */}
-          <div className="flex flex-col items-center justify-center w-full h-full p-12">
-            {/* Huge emoji */}
-            <button
-              onClick={() => handleSpeak(currentCard.speakText)}
-              className="flex items-center justify-center mb-12 outline-none focus:outline-none transform hover:scale-105 active:scale-95 transition-transform"
-              style={{ touchAction: 'manipulation' }}
-            >
-              <div className="text-[20rem] leading-none drop-shadow-2xl">{currentCard.emoji}</div>
-            </button>
+          {/* Card with slide animation */}
+          <div
+            className={`flex flex-col items-center justify-center w-full h-full p-12 transition-transform duration-300 ease-out ${
+              slideDirection === 'up' ? '-translate-y-full opacity-0' :
+              slideDirection === 'down' ? 'translate-y-full opacity-0' :
+              'translate-y-0 opacity-100'
+            }`}
+          >
+            {/* Picture frame card */}
+            <div className="bg-white rounded-3xl border-8 border-black shadow-2xl p-12 flex flex-col items-center max-w-3xl">
 
-            {/* Huge label */}
-            <div className="text-8xl font-black text-black text-center mb-12 drop-shadow-lg px-8">
-              {currentCard.label}
+              {/* Giant UP arrow */}
+              <div className="text-9xl font-black text-gray-700 mb-8 animate-bounce">
+                ↑
+              </div>
+
+              {/* Tappable emoji circle */}
+              <button
+                onClick={() => handleSpeak(currentCard.speakText)}
+                className="w-80 h-80 rounded-full bg-gradient-to-br from-white to-gray-100 border-8 border-black flex items-center justify-center outline-none focus:outline-none transform hover:scale-105 active:scale-95 transition-all shadow-xl mb-8"
+                style={{ touchAction: 'manipulation' }}
+              >
+                <div className="text-[16rem] leading-none">{currentCard.emoji}</div>
+              </button>
+
+              {/* Label/Title */}
+              <div className="text-8xl font-black text-black text-center mb-8 px-8">
+                {currentCard.label}
+              </div>
+
+              {/* Giant DOWN arrow */}
+              <div className="text-9xl font-black text-gray-700 mt-4 animate-bounce" style={{ animationDelay: '150ms' }}>
+                ↓
+              </div>
             </div>
 
-            {/* Visual indicator of position */}
-            <div className="flex gap-4 mb-8">
+            {/* Position dots */}
+            <div className="flex gap-4 mt-12">
               {cards.map((_, idx) => (
                 <div
                   key={idx}
-                  className={`w-5 h-5 rounded-full transition-all ${
+                  className={`w-6 h-6 rounded-full transition-all ${
                     idx === currentIndex
                       ? 'bg-black scale-150'
                       : 'bg-gray-600 opacity-40'
                   }`}
                 />
               ))}
-            </div>
-
-            {/* Swipe hint */}
-            <div className="text-gray-700 text-3xl font-bold">
-              ↕ Swipe to browse
             </div>
           </div>
         </div>
