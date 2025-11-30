@@ -4,14 +4,20 @@
 
 * {
   -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
+  touch-action: none; /* Prevent all default touch behaviors */
+  -webkit-touch-callout: none; /* Prevent iOS callout */
 }
 
-body {
+html, body {
   margin: 0;
   padding: 0;
   overflow: hidden;
+  position: fixed;
+  width: 100%;
+  height: 100%;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  overscroll-behavior: none; /* Prevent pull-to-refresh */
+  -webkit-overflow-scrolling: touch;
 }
 
 /* Prevent text selection for better touch UX */
@@ -20,6 +26,15 @@ body {
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+}
+
+/* Prevent iOS rubber-band scrolling */
+#root {
+  position: fixed;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  overscroll-behavior: none;
 }
 
 /* High contrast mode support */

@@ -15,17 +15,20 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
 
   // Touch/drag handlers for the rolodex
   const handleTouchStart = (e) => {
+    e.preventDefault(); // Prevent iOS gestures
     setIsDragging(true);
     setStartY(e.touches[0].clientY);
     setCurrentY(e.touches[0].clientY);
   };
 
   const handleTouchMove = (e) => {
+    e.preventDefault(); // Prevent iOS gestures
     if (!isDragging) return;
     setCurrentY(e.touches[0].clientY);
   };
 
-  const handleTouchEnd = () => {
+  const handleTouchEnd = (e) => {
+    e.preventDefault(); // Prevent iOS gestures
     if (!isDragging) return;
 
     const deltaY = startY - currentY;
@@ -89,8 +92,24 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
 
   const currentCard = cards[currentIndex];
 
+  // Bright distinct colors for each card (TikTok-style)
+  const cardColors = [
+    'bg-purple-300',
+    'bg-pink-300',
+    'bg-blue-300',
+    'bg-yellow-300',
+    'bg-orange-300',
+    'bg-teal-300',
+    'bg-rose-300',
+    'bg-cyan-300',
+    'bg-lime-300',
+    'bg-fuchsia-300'
+  ];
+
+  const cardColor = cardColors[currentIndex % cardColors.length];
+
   return (
-    <div className="w-screen h-screen flex flex-col relative bg-white no-select">
+    <div className="w-screen h-screen flex flex-col relative bg-white no-select" style={{ touchAction: 'none' }}>
       {/* Double-tap to exit button */}
       <DoubleTapExit onExit={onExitFullscreen} />
 
@@ -123,9 +142,10 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
           </button>
         </div>
 
-        {/* Right Panel - 2/3 width - Rolodex */}
+        {/* Right Panel - 2/3 width - TikTok-style full-screen cards */}
         <div
-          className="w-2/3 flex items-center justify-center bg-blue-50 overflow-hidden relative cursor-grab active:cursor-grabbing"
+          className={`w-2/3 flex items-center justify-center overflow-hidden relative transition-colors ${cardColor}`}
+          style={{ touchAction: 'none' }}
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
@@ -135,38 +155,38 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
           onMouseLeave={handleMouseUp}
           onWheel={handleWheel}
         >
-          {/* Current card */}
-          <div className="flex flex-col items-center justify-center p-8 max-w-2xl w-full">
-            {/* Tappable circle with emoji/icon */}
+          {/* Full-screen card - TikTok style */}
+          <div className="flex flex-col items-center justify-center w-full h-full p-12">
+            {/* Huge emoji */}
             <button
               onClick={() => handleSpeak(currentCard.speakText)}
-              className="w-64 h-64 md:w-80 md:h-80 rounded-full bg-white border-8 border-black flex items-center justify-center hover:bg-gray-100 active:bg-gray-200 transition-colors mb-8 shadow-2xl outline-none focus:outline-none"
-              style={{ minHeight: '72px', minWidth: '72px' }}
+              className="flex items-center justify-center mb-12 outline-none focus:outline-none transform hover:scale-105 active:scale-95 transition-transform"
+              style={{ touchAction: 'manipulation' }}
             >
-              <div className="text-9xl">{currentCard.emoji}</div>
+              <div className="text-[20rem] leading-none drop-shadow-2xl">{currentCard.emoji}</div>
             </button>
 
-            {/* Label */}
-            <div className="text-6xl font-bold text-black text-center mb-8">
+            {/* Huge label */}
+            <div className="text-8xl font-black text-black text-center mb-12 drop-shadow-lg px-8">
               {currentCard.label}
             </div>
 
             {/* Visual indicator of position */}
-            <div className="flex gap-3">
+            <div className="flex gap-4 mb-8">
               {cards.map((_, idx) => (
                 <div
                   key={idx}
-                  className={`w-4 h-4 rounded-full transition-all ${
+                  className={`w-5 h-5 rounded-full transition-all ${
                     idx === currentIndex
-                      ? 'bg-blue-600 scale-125'
-                      : 'bg-gray-300'
+                      ? 'bg-black scale-150'
+                      : 'bg-gray-600 opacity-40'
                   }`}
                 />
               ))}
             </div>
 
             {/* Swipe hint */}
-            <div className="mt-8 text-gray-500 text-2xl">
+            <div className="text-gray-700 text-3xl font-bold">
               ↕ Swipe to browse
             </div>
           </div>
