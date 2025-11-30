@@ -75,6 +75,18 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
     setCurrentY(0);
   };
 
+  // Wheel/scroll handler for desktop
+  const handleWheel = (e) => {
+    e.preventDefault();
+    if (e.deltaY > 0) {
+      // Scroll down - next item
+      setCurrentIndex((prev) => (prev + 1) % cards.length);
+    } else if (e.deltaY < 0) {
+      // Scroll up - previous item
+      setCurrentIndex((prev) => (prev - 1 + cards.length) % cards.length);
+    }
+  };
+
   const currentCard = cards[currentIndex];
 
   return (
@@ -121,6 +133,7 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}
           onMouseLeave={handleMouseUp}
+          onWheel={handleWheel}
         >
           {/* Current card */}
           <div className="flex flex-col items-center justify-center p-8 max-w-2xl w-full">
