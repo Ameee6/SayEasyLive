@@ -13,6 +13,9 @@ const CARD_COLORS = [
   '#EF4444',  // Cherry Red
 ];
 
+// Normalization factor to convert velocity to ~60fps frame rate
+const FRAME_RATE_NORMALIZATION = 16;
+
 function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, onExitFullscreen }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
@@ -88,6 +91,7 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
     e.preventDefault();
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
     }
     setIsAnimating(false);
     setIsDragging(true);
@@ -106,7 +110,7 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
     const deltaTime = currentTime - lastTouchTimeRef.current;
     
     if (deltaTime > 0) {
-      velocityRef.current = (currentY - lastTouchYRef.current) / deltaTime * 16; // Normalize to ~60fps
+      velocityRef.current = (currentY - lastTouchYRef.current) / deltaTime * FRAME_RATE_NORMALIZATION;
     }
     
     lastTouchYRef.current = currentY;
@@ -131,6 +135,7 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
   const handleMouseDown = (e) => {
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
     }
     setIsAnimating(false);
     setIsDragging(true);
@@ -148,7 +153,7 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
     const deltaTime = currentTime - lastTouchTimeRef.current;
     
     if (deltaTime > 0) {
-      velocityRef.current = (currentY - lastTouchYRef.current) / deltaTime * 16;
+      velocityRef.current = (currentY - lastTouchYRef.current) / deltaTime * FRAME_RATE_NORMALIZATION;
     }
     
     lastTouchYRef.current = currentY;
