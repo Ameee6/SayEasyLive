@@ -21,6 +21,10 @@ const NO_BUTTON_COLOR = '#FF6D00';  // Bright Orange
 // Thumbnail sidebar configuration
 const THUMBNAIL_SIZE_BREAKPOINT = 7; // Cards above this threshold get smaller thumbnails
 
+// Generate box-shadow for active thumbnail with glow effect
+const getActiveThumbnailBoxShadow = (cardColor) => 
+  `0 0 20px 4px ${cardColor}, 0 0 40px 8px ${cardColor}80, 0 8px 24px rgba(0,0,0,0.4)`;
+
 // Long-press configuration
 const LONG_PRESS_THRESHOLD = 800; // 0.8 seconds
 const REPEAT_INTERVAL = 2000; // 2 seconds
@@ -448,10 +452,10 @@ function ThumbnailSidebar({ cards, currentIndex, getCardColor }) {
                 maxHeight: cards.length > THUMBNAIL_SIZE_BREAKPOINT ? '90px' : '110px',
                 flex: '1 1 0',
                 boxShadow: isActive 
-                  ? `0 0 20px 4px ${cardColor}, 0 0 40px 8px ${cardColor}80, 0 8px 24px rgba(0,0,0,0.4)` 
+                  ? getActiveThumbnailBoxShadow(cardColor) 
                   : '0 2px 4px rgba(0,0,0,0.1)',
                 transform: isActive ? 'scale(1.08)' : 'scale(1)',
-                transition: 'all 0.3s ease-in-out',
+                transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out, border 0.3s ease-in-out',
                 position: 'relative',
                 zIndex: isActive ? 10 : 1,
               }}

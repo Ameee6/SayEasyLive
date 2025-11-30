@@ -62,10 +62,10 @@ html, body {
 /* Dramatic glow pulse animation for active thumbnail */
 @keyframes glowPulse {
   0%, 100% { 
-    filter: brightness(1) drop-shadow(0 0 8px currentColor);
+    filter: brightness(1);
   }
   50% { 
-    filter: brightness(1.15) drop-shadow(0 0 16px currentColor);
+    filter: brightness(1.15);
   }
 }
 
