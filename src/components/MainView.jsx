@@ -432,7 +432,7 @@ function ThumbnailSidebar({ cards, currentIndex, getCardColor }) {
       aria-hidden="true" // Hide from screen readers since it's purely visual
     >
       {/* Vertically stacked thumbnails with generous spacing */}
-      <div className="flex flex-col gap-3 w-full max-h-full overflow-hidden">
+      <div className="flex flex-col gap-4 w-full max-h-full overflow-hidden">
         {cards.map((card, idx) => {
           const isActive = idx === currentIndex;
           const cardColor = getCardColor(idx);
@@ -451,12 +451,12 @@ function ThumbnailSidebar({ cards, currentIndex, getCardColor }) {
                 borderColor: cardColor,
                 borderTopWidth: isActive ? '2px' : '1px',
                 borderBottomWidth: isActive ? '2px' : '1px',
-                borderLeftWidth: isActive ? '10px' : '6px',
-                borderRightWidth: isActive ? '10px' : '6px',
+                borderLeftWidth: isActive ? '14px' : '10px',
+                borderRightWidth: isActive ? '14px' : '10px',
                 backgroundColor: isActive ? '#ffffff' : '#fafafa',
-                // 25% increased vertical space
-                minHeight: '62px',
-                maxHeight: cards.length > THUMBNAIL_SIZE_BREAKPOINT ? '112px' : '137px',
+                // Increased vertical space (10% additional height)
+                minHeight: '68px',
+                maxHeight: cards.length > THUMBNAIL_SIZE_BREAKPOINT ? '123px' : '151px',
                 flex: '1 1 0',
                 boxShadow: isActive 
                   ? getActiveThumbnailBoxShadow(cardColor) 
