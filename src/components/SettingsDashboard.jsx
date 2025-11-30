@@ -6,7 +6,7 @@ import { saveImage, loadAllImages, fileToDataUrl, resizeImage } from '../utils/i
  * FUTURE ENHANCEMENT (Next Phase):
  * - Backend image upload: Store images on server instead of IndexedDB for cross-device access
  * - Multi-device login: Allow users to sync settings and cards across devices
- * These features are ready to be implemented but are NOT included in the current version.
+ * Note: These features are planned for a future release and are not implemented in this version.
  */
 
 // Color palette for scroll cards (matching MainView)
