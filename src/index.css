@@ -98,6 +98,10 @@ html, body {
 .scrollable-page {
   position: relative !important;
   overflow-y: auto !important;
+  overflow-x: hidden !important;
   touch-action: pan-y !important;
   -webkit-overflow-scrolling: touch;
+  height: 100vh !important;
+  height: 100dvh !important; /* Dynamic viewport height for mobile browsers */
+  padding-bottom: env(safe-area-inset-bottom, 0); /* iOS safe area padding */
 }

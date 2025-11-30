@@ -32,6 +32,24 @@ function Homepage({ onNavigateToSettings, onNavigateToMain }) {
             >
               Simple, Stable Communication Tools for All.
             </p>
+            {/* Scroll indicator */}
+            <div className="mt-8 animate-bounce">
+              <span className="text-gray-400 text-sm block mb-2">Scroll to explore</span>
+              <svg 
+                className="w-6 h-6 mx-auto text-gray-400" 
+                fill="none" 
+                stroke="currentColor" 
+                viewBox="0 0 24 24"
+                aria-hidden="true"
+              >
+                <path 
+                  strokeLinecap="round" 
+                  strokeLinejoin="round" 
+                  strokeWidth={2} 
+                  d="M19 14l-7 7m0 0l-7-7m7 7V3" 
+                />
+              </svg>
+            </div>
           </section>
 
           {/* Info Cards Section */}
@@ -57,7 +75,7 @@ function Homepage({ onNavigateToSettings, onNavigateToMain }) {
                   <div>
                     <span className="font-semibold text-white">Discreet "Double-Tap to Exit" Control</span>
                     <p className="text-gray-400 text-base mt-1">
-                      Only caregivers know the quick double-tap exit gesture
+                      Caregivers use a double-tap to exit, reducing unintended button presses.
                     </p>
                   </div>
                 </li>
@@ -180,7 +198,7 @@ function Homepage({ onNavigateToSettings, onNavigateToMain }) {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-900 border-t border-gray-700 py-6 px-4">
+      <footer className="bg-gray-900 border-t border-gray-700 py-6 px-4 pb-8 flex-shrink-0">
         <div className="max-w-5xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="text-gray-400 text-center md:text-left">
             <span 
