@@ -171,48 +171,58 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
             className="absolute inset-0 w-full h-full"
             style={{
               transform: isDragging ? `translateY(${dragOffset}px)` : 'translateY(0)',
-              transition: isDragging ? 'none' : 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+              transition: isDragging ? 'none' : 'transform 0.6s cubic-bezier(0.25, 0.46, 0.45, 0.94)'
             }}
           >
+            {/* Previous card (above current) */}
+            <div className={`absolute inset-0 w-full h-full bg-gradient-to-br ${cardGradients[(currentIndex - 1 + cards.length) % cardGradients.length]} flex flex-col items-center justify-center p-12`}
+                 style={{ transform: 'translateY(-100%)' }}>
+              <div className="text-[12rem] font-black text-yellow-300 mb-auto mt-12 drop-shadow-2xl animate-pulse">↑</div>
+              <button className="w-[500px] h-[500px] rounded-full bg-white/95 backdrop-blur flex items-center justify-center shadow-2xl pointer-events-none">
+                <div className="text-[18rem] leading-none">{prevCard.emoji}</div>
+              </button>
+              <div className="text-9xl font-black text-white text-center drop-shadow-2xl px-8 my-12">{prevCard.label}</div>
+              <div className="text-[12rem] font-black text-yellow-300 mb-12 mt-auto drop-shadow-2xl animate-pulse">↓</div>
+            </div>
+
             {/* Current card - full screen */}
             <div className={`absolute inset-0 w-full h-full bg-gradient-to-br ${cardGradients[currentIndex % cardGradients.length]} flex flex-col items-center justify-center p-12`}>
 
-              {/* UP arrow */}
-              <div className="text-8xl font-black text-white/90 mb-auto mt-8 drop-shadow-2xl">
+              {/* UP arrow - huge and colorful */}
+              <div className="text-[12rem] font-black text-yellow-300 mb-auto mt-12 drop-shadow-2xl animate-pulse">
                 ↑
               </div>
 
-              {/* Huge tappable emoji circle */}
+              {/* Huge tappable emoji circle - 25% bigger */}
               <button
                 onClick={() => handleSpeak(currentCard.speakText)}
-                className="w-80 h-80 md:w-96 md:h-96 rounded-full bg-white/95 backdrop-blur flex items-center justify-center outline-none focus:outline-none transform active:scale-95 transition-all shadow-2xl"
+                className="w-[500px] h-[500px] rounded-full bg-white/95 backdrop-blur flex items-center justify-center outline-none focus:outline-none transform active:scale-95 transition-all shadow-2xl"
                 style={{ touchAction: 'manipulation' }}
               >
-                <div className="text-[16rem] leading-none">{currentCard.emoji}</div>
+                <div className="text-[18rem] leading-none">{currentCard.emoji}</div>
               </button>
 
               {/* Title/Label */}
-              <div className="text-8xl font-black text-white text-center drop-shadow-2xl px-8 my-12">
+              <div className="text-9xl font-black text-white text-center drop-shadow-2xl px-8 my-12">
                 {currentCard.label}
               </div>
 
-              {/* DOWN arrow */}
-              <div className="text-8xl font-black text-white/90 mb-8 mt-auto drop-shadow-2xl">
+              {/* DOWN arrow - huge and colorful */}
+              <div className="text-[12rem] font-black text-yellow-300 mb-12 mt-auto drop-shadow-2xl animate-pulse">
                 ↓
               </div>
             </div>
 
-            {/* Next card (below current, slides up when swiping) */}
-            <div
-              className={`absolute inset-0 w-full h-full bg-gradient-to-br ${cardGradients[(currentIndex + 1) % cardGradients.length]}`}
-              style={{ transform: 'translateY(100%)' }}
-            />
-
-            {/* Previous card (above current, slides down when swiping) */}
-            <div
-              className={`absolute inset-0 w-full h-full bg-gradient-to-br ${cardGradients[(currentIndex - 1 + cards.length) % cardGradients.length]}`}
-              style={{ transform: 'translateY(-100%)' }}
-            />
+            {/* Next card (below current) */}
+            <div className={`absolute inset-0 w-full h-full bg-gradient-to-br ${cardGradients[(currentIndex + 1) % cardGradients.length]} flex flex-col items-center justify-center p-12`}
+                 style={{ transform: 'translateY(100%)' }}>
+              <div className="text-[12rem] font-black text-yellow-300 mb-auto mt-12 drop-shadow-2xl animate-pulse">↑</div>
+              <button className="w-[500px] h-[500px] rounded-full bg-white/95 backdrop-blur flex items-center justify-center shadow-2xl pointer-events-none">
+                <div className="text-[18rem] leading-none">{nextCard.emoji}</div>
+              </button>
+              <div className="text-9xl font-black text-white text-center drop-shadow-2xl px-8 my-12">{nextCard.label}</div>
+              <div className="text-[12rem] font-black text-yellow-300 mb-12 mt-auto drop-shadow-2xl animate-pulse">↓</div>
+            </div>
           </div>
 
           {/* Position dots */}
