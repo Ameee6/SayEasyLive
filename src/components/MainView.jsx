@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { speak } from '../utils/speech';
 import { defaultLeftButtons } from '../data/defaultCards';
 
@@ -17,12 +18,20 @@ const CARD_COLORS = [
 const YES_BUTTON_COLOR = '#00E676'; // Bright Lime Green
 const NO_BUTTON_COLOR = '#FF6D00';  // Bright Orange
 
-// Normalization factor to convert velocity to ~60fps frame rate
-const FRAME_RATE_NORMALIZATION = 16;
-
 // Long-press configuration
 const LONG_PRESS_THRESHOLD = 800; // 0.8 seconds
 const REPEAT_INTERVAL = 2000; // 2 seconds
+
+// Spring configuration for gentle wheel-like motion
+// Very low stiffness + high damping = slow, smooth, natural settling
+const SPRING_CONFIG = {
+  type: 'spring',
+  stiffness: 80,    // Low stiffness for gentle acceleration
+  damping: 25,      // Higher damping for smooth deceleration without bounce
+  mass: 1.2,        // Slightly heavier mass for slower, more deliberate motion
+  restDelta: 0.5,   // Rest threshold
+  restSpeed: 0.5,   // Rest speed threshold
+};
 
 // Shared sizing constants for accessibility - oversized tap zones for reliable touch/palm registration
 const YES_NO_BUTTON_STYLE = {
@@ -51,14 +60,7 @@ const LABEL_STYLE = {
 
 function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, onExitFullscreen }) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState(0); // Real-time drag position
-  const [startY, setStartY] = useState(0);
-  const [isAnimating, setIsAnimating] = useState(false);
-  const velocityRef = useRef(0);
-  const lastTouchTimeRef = useRef(0);
-  const lastTouchYRef = useRef(0);
-  const animationRef = useRef(null);
+  const [direction, setDirection] = useState(0); // -1 for up, 1 for down, 0 for initial
 
   // Button animation states
   const [yesButtonAnimating, setYesButtonAnimating] = useState(false);
@@ -73,6 +75,9 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
   // Long press handling refs
   const longPressTimerRef = useRef(null);
   const repeatIntervalRef = useRef(null);
+
+  // Wheel event debounce ref
+  const wheelTimeoutRef = useRef(null);
 
   const handleSpeak = useCallback((text) => {
     speak(text, voicePreference);
@@ -112,6 +117,7 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
       if (yesAnimationTimeoutRef.current) clearTimeout(yesAnimationTimeoutRef.current);
       if (noAnimationTimeoutRef.current) clearTimeout(noAnimationTimeoutRef.current);
       if (cardAnimationTimeoutRef.current) clearTimeout(cardAnimationTimeoutRef.current);
+      if (wheelTimeoutRef.current) clearTimeout(wheelTimeoutRef.current);
     };
   }, [stopLongPress]);
 
@@ -120,169 +126,57 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
     return CARD_COLORS[index % CARD_COLORS.length];
   };
 
-  // No-op function for settle animation (bounce animation removed for smooth 400ms transition)
-  const triggerSettleAnimation = useCallback(() => {
-    // Intentionally empty - bounce animation removed
-  }, []);
+  // Navigate to next card (swipe up / scroll down)
+  const goToNextCard = useCallback(() => {
+    setDirection(1);
+    setCurrentIndex((prev) => (prev + 1) % cards.length);
+  }, [cards.length]);
 
-  // Smooth momentum-based settle animation - soft 400ms glide
-  const animateSettle = (initialVelocity, initialOffset) => {
-    const friction = 0.97; // High friction for gentle deceleration
-    const minVelocity = 0.2; // Very low threshold for ultra-smooth stopping
-    const cardHeight = window.innerHeight;
-    
-    let velocity = initialVelocity * 0.35; // Reduced initial velocity for slower, softer animation
-    let offset = initialOffset;
-    
-    const animate = () => {
-      velocity *= friction;
-      offset += velocity;
-      
-      // Check if we should snap to a card
-      if (Math.abs(velocity) < minVelocity) {
-        // Determine final card based on offset
-        let targetIndex = currentIndex;
-        if (offset > cardHeight * 0.3) {
-          targetIndex = (currentIndex - 1 + cards.length) % cards.length;
-        } else if (offset < -cardHeight * 0.3) {
-          targetIndex = (currentIndex + 1) % cards.length;
-        }
-        
-        setCurrentIndex(targetIndex);
-        setDragOffset(0);
-        setIsAnimating(false);
-        triggerSettleAnimation();
-        return;
-      }
-      
-      // Check boundaries - if offset exceeds threshold, trigger card change
-      if (offset > cardHeight * 0.5) {
-        setCurrentIndex((prev) => (prev - 1 + cards.length) % cards.length);
-        setDragOffset(0);
-        setIsAnimating(false);
-        triggerSettleAnimation();
-        return;
-      } else if (offset < -cardHeight * 0.5) {
-        setCurrentIndex((prev) => (prev + 1) % cards.length);
-        setDragOffset(0);
-        setIsAnimating(false);
-        triggerSettleAnimation();
-        return;
-      }
-      
-      setDragOffset(offset);
-      animationRef.current = requestAnimationFrame(animate);
-    };
-    
-    setIsAnimating(true);
-    animationRef.current = requestAnimationFrame(animate);
-  };
+  // Navigate to previous card (swipe down / scroll up)
+  const goToPrevCard = useCallback(() => {
+    setDirection(-1);
+    setCurrentIndex((prev) => (prev - 1 + cards.length) % cards.length);
+  }, [cards.length]);
 
-  // Touch handlers - real-time following with velocity tracking
-  const handleTouchStart = (e) => {
-    e.preventDefault();
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-      animationRef.current = null;
+  // Handle drag end with velocity-based navigation
+  const handleDragEnd = useCallback((event, info) => {
+    const threshold = 50; // Minimum drag distance to trigger card change
+    const velocityThreshold = 200; // Minimum velocity to trigger card change
+    
+    const offset = info.offset.y;
+    const velocity = info.velocity.y;
+    
+    // Determine if we should change cards based on drag distance or velocity
+    if (offset < -threshold || velocity < -velocityThreshold) {
+      // Dragged up or flicked up - go to next card
+      goToNextCard();
+    } else if (offset > threshold || velocity > velocityThreshold) {
+      // Dragged down or flicked down - go to previous card
+      goToPrevCard();
     }
-    setIsAnimating(false);
-    setIsDragging(true);
-    setStartY(e.touches[0].clientY);
-    lastTouchYRef.current = e.touches[0].clientY;
-    lastTouchTimeRef.current = Date.now();
-    velocityRef.current = 0;
-  };
+    // If neither threshold met, framer-motion spring will animate back to center
+  }, [goToNextCard, goToPrevCard]);
 
-  const handleTouchMove = (e) => {
+  // Wheel handler with debouncing for smooth scrolling
+  const handleWheel = useCallback((e) => {
     e.preventDefault();
-    if (!isDragging) return;
     
-    const currentY = e.touches[0].clientY;
-    const currentTime = Date.now();
-    const deltaTime = currentTime - lastTouchTimeRef.current;
+    // Debounce wheel events to prevent rapid scrolling
+    if (wheelTimeoutRef.current) return;
     
-    if (deltaTime > 0) {
-      velocityRef.current = (currentY - lastTouchYRef.current) / deltaTime * FRAME_RATE_NORMALIZATION;
-    }
-    
-    lastTouchYRef.current = currentY;
-    lastTouchTimeRef.current = currentTime;
-    
-    const deltaY = currentY - startY;
-    setDragOffset(deltaY);
-  };
-
-  const handleTouchEnd = (e) => {
-    e.preventDefault();
-    if (!isDragging) return;
-
-    setIsDragging(false);
-    setStartY(0);
-    
-    // Use momentum scrolling with current velocity
-    animateSettle(velocityRef.current * 2, dragOffset);
-  };
-
-  // Mouse handlers - real-time following with velocity tracking
-  const handleMouseDown = (e) => {
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-      animationRef.current = null;
-    }
-    setIsAnimating(false);
-    setIsDragging(true);
-    setStartY(e.clientY);
-    lastTouchYRef.current = e.clientY;
-    lastTouchTimeRef.current = Date.now();
-    velocityRef.current = 0;
-  };
-
-  const handleMouseMove = (e) => {
-    if (!isDragging) return;
-    
-    const currentY = e.clientY;
-    const currentTime = Date.now();
-    const deltaTime = currentTime - lastTouchTimeRef.current;
-    
-    if (deltaTime > 0) {
-      velocityRef.current = (currentY - lastTouchYRef.current) / deltaTime * FRAME_RATE_NORMALIZATION;
-    }
-    
-    lastTouchYRef.current = currentY;
-    lastTouchTimeRef.current = currentTime;
-    
-    const deltaY = currentY - startY;
-    setDragOffset(deltaY);
-  };
-
-  const handleMouseUp = () => {
-    if (!isDragging) return;
-
-    setIsDragging(false);
-    setStartY(0);
-    
-    // Use momentum scrolling with current velocity
-    animateSettle(velocityRef.current * 2, dragOffset);
-  };
-
-  // Wheel handler with smooth scrolling
-  const handleWheel = (e) => {
-    e.preventDefault();
-    if (isDragging || isAnimating) return;
+    wheelTimeoutRef.current = setTimeout(() => {
+      wheelTimeoutRef.current = null;
+    }, 400); // Debounce prevents rapid successive wheel events
 
     if (e.deltaY > 0) {
-      setCurrentIndex((prev) => (prev + 1) % cards.length);
-      triggerSettleAnimation();
+      goToNextCard();
     } else if (e.deltaY < 0) {
-      setCurrentIndex((prev) => (prev - 1 + cards.length) % cards.length);
-      triggerSettleAnimation();
+      goToPrevCard();
     }
-  };
+  }, [goToNextCard, goToPrevCard]);
 
-  // Get current, previous, and next cards
+  // Get current card
   const currentCard = cards[currentIndex];
-  const prevCard = cards[(currentIndex - 1 + cards.length) % cards.length];
-  const nextCard = cards[(currentIndex + 1) % cards.length];
 
   // Yes button handlers with animation and long-press
   const handleYesPress = () => {
@@ -398,51 +292,37 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
           </button>
         </div>
 
-        {/* Right Panel - 2/3 width - Full-screen card swiper */}
+        {/* Right Panel - 2/3 width - Full-screen card swiper with spring physics */}
         <div
           className="w-2/3 flex items-center justify-center overflow-hidden relative"
           style={{ touchAction: 'none' }}
-          onTouchStart={handleTouchStart}
-          onTouchMove={handleTouchMove}
-          onTouchEnd={handleTouchEnd}
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
           onWheel={handleWheel}
         >
-          {/* Full-screen cards - one at a time, slides in/out - MUCH SLOWER transition */}
-          <div
-            className="absolute inset-0 w-full h-full"
-            style={{
-              transform: isDragging || isAnimating ? `translateY(${dragOffset}px)` : 'translateY(0)',
-              transition: isDragging || isAnimating ? 'none' : 'transform 400ms ease-out' // Soft, smooth 400ms glide with no snapback
-            }}
-          >
-            {/* Previous card (above current) */}
-            <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center p-8"
-                 style={{ transform: 'translateY(-100%)', backgroundColor: getCardColor((currentIndex - 1 + cards.length) % cards.length) }}>
-              <button 
-                className="rounded-full bg-white/95 backdrop-blur flex items-center justify-center shadow-2xl pointer-events-none border-8 border-black/20 overflow-hidden"
-                style={CARD_EMOJI_BUTTON_STYLE}
-              >
-                <div style={{ fontSize: 'min(28vw, 14rem)', lineHeight: 1 }}>{prevCard.emoji}</div>
-              </button>
-              <div 
-                className="font-bold text-center px-4 my-6"
-                style={{ 
-                  fontSize: 'clamp(48px, 12vw, 144px)',
-                  ...LABEL_STYLE
-                }}
-              >
-                {prevCard.label}
-              </div>
-            </div>
-
-            {/* Current card - full screen with enhanced touch zone */}
-            <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center p-8"
-                 style={{ backgroundColor: getCardColor(currentIndex) }}>
-
+          {/* Animated card container using framer-motion */}
+          <AnimatePresence initial={false} mode="wait" custom={direction}>
+            <motion.div
+              key={currentIndex}
+              custom={direction}
+              initial={(dir) => ({
+                y: dir === 0 ? 0 : dir > 0 ? '100%' : '-100%',
+                opacity: 0.8,
+              })}
+              animate={{
+                y: 0,
+                opacity: 1,
+              }}
+              exit={(dir) => ({
+                y: dir > 0 ? '-100%' : '100%',
+                opacity: 0.8,
+              })}
+              transition={SPRING_CONFIG}
+              drag="y"
+              dragConstraints={{ top: 0, bottom: 0 }}
+              dragElastic={0.3}
+              onDragEnd={handleDragEnd}
+              className="absolute inset-0 w-full h-full flex flex-col items-center justify-center p-8"
+              style={{ backgroundColor: getCardColor(currentIndex) }}
+            >
               {/* Huge tappable emoji circle - enlarged touch zone */}
               <button
                 onMouseDown={handleCardPress}
@@ -467,38 +347,21 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
               >
                 {currentCard.label}
               </div>
-            </div>
-
-            {/* Next card (below current) */}
-            <div className="absolute inset-0 w-full h-full flex flex-col items-center justify-center p-8"
-                 style={{ transform: 'translateY(100%)', backgroundColor: getCardColor((currentIndex + 1) % cards.length) }}>
-              <button 
-                className="rounded-full bg-white/95 backdrop-blur flex items-center justify-center shadow-2xl pointer-events-none border-8 border-black/20 overflow-hidden"
-                style={CARD_EMOJI_BUTTON_STYLE}
-              >
-                <div style={{ fontSize: 'min(28vw, 14rem)', lineHeight: 1 }}>{nextCard.emoji}</div>
-              </button>
-              <div 
-                className="font-bold text-center px-4 my-6"
-                style={{ 
-                  fontSize: 'clamp(48px, 12vw, 144px)',
-                  ...LABEL_STYLE
-                }}
-              >
-                {nextCard.label}
-              </div>
-            </div>
-          </div>
+            </motion.div>
+          </AnimatePresence>
 
           {/* Position dots - larger for accessibility */}
           <div className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex gap-4 z-20">
             {cards.map((_, idx) => (
-              <div
+              <motion.div
                 key={idx}
-                className={`rounded-full transition-all duration-500 ${
-                  idx === currentIndex
-                    ? 'w-12 h-12 bg-white scale-110 shadow-lg'
-                    : 'w-8 h-8 bg-white/50'
+                animate={{
+                  scale: idx === currentIndex ? 1.1 : 1,
+                  backgroundColor: idx === currentIndex ? 'rgba(255,255,255,1)' : 'rgba(255,255,255,0.5)',
+                }}
+                transition={{ type: 'spring', stiffness: 300, damping: 25 }}
+                className={`rounded-full shadow-lg ${
+                  idx === currentIndex ? 'w-12 h-12' : 'w-8 h-8'
                 }`}
               />
             ))}

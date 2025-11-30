@@ -59,19 +59,10 @@ html, body {
   75% { transform: scale(1.04); }
 }
 
-/* Gentle settle animation on card transition - soft fade only, no bounce */
-@keyframes settleBounceFade {
-  0%, 100% { opacity: 1; }
-}
-
 .spin-on-press {
   animation: funSpin 0.8s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .bounce-on-press {
   animation: funBounce 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.settle-bounce {
-  animation: settleBounceFade 400ms ease-out;
 }
