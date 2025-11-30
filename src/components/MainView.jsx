@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { speak } from '../utils/speech';
 import { defaultLeftButtons } from '../data/defaultCards';
 
@@ -22,15 +22,11 @@ const NO_BUTTON_COLOR = '#FF6D00';  // Bright Orange
 const LONG_PRESS_THRESHOLD = 800; // 0.8 seconds
 const REPEAT_INTERVAL = 2000; // 2 seconds
 
-// Spring configuration for gentle wheel-like motion
-// Very low stiffness + high damping = slow, smooth, natural settling
-const SPRING_CONFIG = {
-  type: 'spring',
-  stiffness: 80,    // Low stiffness for gentle acceleration
-  damping: 25,      // Higher damping for smooth deceleration without bounce
-  mass: 1.2,        // Slightly heavier mass for slower, more deliberate motion
-  restDelta: 0.5,   // Rest threshold
-  restSpeed: 0.5,   // Rest speed threshold
+// Tween configuration for smooth 500ms transitions
+const TRANSITION_CONFIG = {
+  type: 'tween',
+  duration: 0.5,    // 500ms for smooth but responsive feel
+  ease: 'easeInOut',
 };
 
 // Shared sizing constants for accessibility - oversized tap zones for reliable touch/palm registration
@@ -139,6 +135,7 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
   }, [cards.length]);
 
   // Handle drag end with velocity-based navigation
+  // Pulling down reveals next card, pulling up reveals previous card
   const handleDragEnd = useCallback((event, info) => {
     const threshold = 50; // Minimum drag distance to trigger card change
     const velocityThreshold = 200; // Minimum velocity to trigger card change
@@ -147,17 +144,18 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
     const velocity = info.velocity.y;
     
     // Determine if we should change cards based on drag distance or velocity
-    if (offset < -threshold || velocity < -velocityThreshold) {
-      // Dragged up or flicked up - go to next card
+    if (offset > threshold || velocity > velocityThreshold) {
+      // Dragged down or flicked down - go to next card (pull down reveals next)
       goToNextCard();
-    } else if (offset > threshold || velocity > velocityThreshold) {
-      // Dragged down or flicked down - go to previous card
+    } else if (offset < -threshold || velocity < -velocityThreshold) {
+      // Dragged up or flicked up - go to previous card (pull up reveals previous)
       goToPrevCard();
     }
     // If neither threshold met, framer-motion spring will animate back to center
   }, [goToNextCard, goToPrevCard]);
 
   // Wheel handler with debouncing for smooth scrolling
+  // Scroll down reveals next card, scroll up reveals previous card
   const handleWheel = useCallback((e) => {
     e.preventDefault();
     
@@ -169,8 +167,10 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
     }, 400); // Debounce prevents rapid successive wheel events
 
     if (e.deltaY > 0) {
+      // Scroll down - go to next card
       goToNextCard();
     } else if (e.deltaY < 0) {
+      // Scroll up - go to previous card
       goToPrevCard();
     }
   }, [goToNextCard, goToPrevCard]);
@@ -299,23 +299,20 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
           onWheel={handleWheel}
         >
           {/* Animated card container using framer-motion */}
-          <AnimatePresence initial={false} mode="wait" custom={direction}>
+          <AnimatePresence initial={false} custom={direction}>
             <motion.div
               key={currentIndex}
               custom={direction}
               initial={(dir) => ({
                 y: dir === 0 ? 0 : dir > 0 ? '100%' : '-100%',
-                opacity: 0.8,
               })}
               animate={{
                 y: 0,
-                opacity: 1,
               }}
               exit={(dir) => ({
                 y: dir > 0 ? '-100%' : '100%',
-                opacity: 0.8,
               })}
-              transition={SPRING_CONFIG}
+              transition={TRANSITION_CONFIG}
               drag="y"
               dragConstraints={{ top: 0, bottom: 0 }}
               dragElastic={0.3}
