@@ -462,7 +462,7 @@ function ThumbnailSidebar({ cards, currentIndex, getCardColor }) {
                   ? getActiveThumbnailBoxShadow(cardColor) 
                   : '0 2px 4px rgba(0,0,0,0.1)',
                 transform: isActive ? 'scale(1.08)' : 'scale(1)',
-                transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out, border-width 0.3s ease-in-out',
+                transition: 'transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out, border 0.3s ease-in-out',
                 position: 'relative',
                 zIndex: isActive ? 10 : 1,
               }}
