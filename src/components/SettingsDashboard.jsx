@@ -27,6 +27,14 @@ const NO_BUTTON_COLOR = '#FF6D00';
 // Maximum number of removed custom cards to store
 const MAX_REMOVED_CARDS = 10;
 
+// ID prefix constants for card type identification
+const CARD_ID_PREFIX = 'card-';
+const PRESET_ID_PREFIX = 'preset-';
+const MAIN_BUTTON_IDS = ['main-top', 'main-bottom'];
+
+// Helper function to check if a card ID belongs to a card (custom or preset)
+const isCardId = (id) => id.startsWith(CARD_ID_PREFIX) || id.startsWith(PRESET_ID_PREFIX);
+
 function SettingsDashboard({ onSave, onBack }) {
   const [settings, setSettings] = useState(loadDashboardSettings());
   const [images, setImages] = useState({});
@@ -86,7 +94,7 @@ function SettingsDashboard({ onSave, onBack }) {
       setImages(prev => ({ ...prev, [targetId]: resizedDataUrl }));
 
       // Update settings with imageId reference
-      if (targetId === 'main-top' || targetId === 'main-bottom') {
+      if (MAIN_BUTTON_IDS.includes(targetId)) {
         const buttonKey = targetId === 'main-top' ? 'top' : 'bottom';
         setSettings(prev => ({
           ...prev,
@@ -98,7 +106,7 @@ function SettingsDashboard({ onSave, onBack }) {
             }
           }
         }));
-      } else if (targetId.startsWith('card-') || targetId.startsWith('preset-')) {
+      } else if (isCardId(targetId)) {
         const cardIndex = settings.scrollCards.findIndex(c => c.id === targetId);
         if (cardIndex !== -1) {
           const newCards = [...settings.scrollCards];
@@ -177,9 +185,9 @@ function SettingsDashboard({ onSave, onBack }) {
   // Generate unique ID using crypto.randomUUID if available, fallback to timestamp+random
   const generateUniqueId = () => {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-      return `card-${crypto.randomUUID()}`;
+      return `${CARD_ID_PREFIX}${crypto.randomUUID()}`;
     }
-    return `card-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    return `${CARD_ID_PREFIX}${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
   };
 
   // Add new custom card (paid feature)
@@ -236,18 +244,19 @@ function SettingsDashboard({ onSave, onBack }) {
     setSettings(prev => ({ ...prev, scrollCards: newCards }));
   };
 
-  // Permanently delete a card from the removed cards list
-  const permanentlyDeleteRemovedCard = (removedIndex) => {
-    const updatedRemovedCards = removedCards.filter((_, i) => i !== removedIndex);
+  // Permanently delete a card from the removed cards list by card ID
+  const permanentlyDeleteRemovedCard = (cardId) => {
+    const updatedRemovedCards = removedCards.filter(c => c.id !== cardId);
     setRemovedCards(updatedRemovedCards);
     saveRemovedCards(updatedRemovedCards);
   };
 
-  // Re-add a previously removed custom card
-  const reAddCard = (removedIndex) => {
+  // Re-add a previously removed custom card by card ID
+  const reAddCard = (cardId) => {
     if (settings.scrollCards.length >= 10) return;
     
-    const cardToReAdd = removedCards[removedIndex];
+    const cardToReAdd = removedCards.find(c => c.id === cardId);
+    if (!cardToReAdd) return;
     
     // Add back to scroll cards
     setSettings(prev => ({
@@ -255,8 +264,8 @@ function SettingsDashboard({ onSave, onBack }) {
       scrollCards: [...prev.scrollCards, cardToReAdd]
     }));
     
-    // Remove from removed cards list
-    const updatedRemovedCards = removedCards.filter((_, i) => i !== removedIndex);
+    // Remove from removed cards list by card ID
+    const updatedRemovedCards = removedCards.filter(c => c.id !== cardId);
     setRemovedCards(updatedRemovedCards);
     saveRemovedCards(updatedRemovedCards);
   };
@@ -576,38 +585,34 @@ function SettingsDashboard({ onSave, onBack }) {
                 
                 {showRemovedCards && (
                   <div className="space-y-2 ml-4">
-                    {getRemovedCustomCards().map((card) => {
-                      // Find the actual index in the full removedCards array
-                      const actualIndex = removedCards.findIndex(c => c.id === card.id);
-                      return (
-                        <div 
-                          key={`removed-${card.id}`}
-                          className="flex items-center justify-between p-2 bg-gray-700 rounded"
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="text-xl">{card.emoji}</span>
-                            <span className="text-gray-300">{card.label}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            {settings.scrollCards.length < 10 && (
-                              <button
-                                onClick={() => reAddCard(actualIndex)}
-                                className="px-2 py-1 bg-blue-600 rounded text-sm hover:bg-blue-500"
-                              >
-                                Re-add
-                              </button>
-                            )}
-                            <button
-                              onClick={() => permanentlyDeleteRemovedCard(actualIndex)}
-                              className="w-6 h-6 rounded-full bg-red-600/50 hover:bg-red-600 flex items-center justify-center text-sm"
-                              title="Permanently delete"
-                            >
-                              ✕
-                            </button>
-                          </div>
+                    {getRemovedCustomCards().map((card) => (
+                      <div 
+                        key={`removed-${card.id}`}
+                        className="flex items-center justify-between p-2 bg-gray-700 rounded"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl">{card.emoji}</span>
+                          <span className="text-gray-300">{card.label}</span>
                         </div>
-                      );
-                    })}
+                        <div className="flex items-center gap-2">
+                          {settings.scrollCards.length < 10 && (
+                            <button
+                              onClick={() => reAddCard(card.id)}
+                              className="px-2 py-1 bg-blue-600 rounded text-sm hover:bg-blue-500"
+                            >
+                              Re-add
+                            </button>
+                          )}
+                          <button
+                            onClick={() => permanentlyDeleteRemovedCard(card.id)}
+                            className="w-6 h-6 rounded-full bg-red-600/50 hover:bg-red-600 flex items-center justify-center text-sm"
+                            title="Permanently delete"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
