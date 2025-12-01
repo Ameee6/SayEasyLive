@@ -8,10 +8,10 @@ const DRUM_REPEAT_INTERVAL = 1500; // 1.5 seconds
 
 // Button styling constants - enlarged for better touch accessibility
 const CONTROL_BUTTON_STYLE = {
-  width: 'min(32vw, 42vh)',
-  height: 'min(32vw, 42vh)',
-  minWidth: '200px',
-  minHeight: '200px',
+  width: 'min(34vw, 44vh)',
+  height: 'min(34vw, 44vh)',
+  minWidth: '220px',
+  minHeight: '220px',
   touchAction: 'manipulation',
   cursor: 'pointer',
 };
@@ -177,7 +177,11 @@ function DrumsView({ leftButtons, voicePreference, onBack }) {
                   style={{ 
                     fontSize: 'clamp(24px, 3vw, 48px)',
                     ...LABEL_STYLE,
-                    textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
+                    textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
+                    whiteSpace: 'normal',
+                    wordWrap: 'break-word',
+                    maxWidth: '90%',
+                    padding: '0 4px',
                   }}
                 >
                   {leftButtons.top.label}
@@ -186,11 +190,11 @@ function DrumsView({ leftButtons, voicePreference, onBack }) {
             )}
           </button>
 
-          {/* BACK button (arrow left) - not editable */}
+          {/* BACK button (arrow left) - not editable, with glow animation */}
           <button
             onClick={onBack}
             aria-label="Go back"
-            className="flex flex-col items-center justify-center rounded-full outline-none focus:outline-none shadow-2xl border-4 border-white"
+            className="flex flex-col items-center justify-center rounded-full outline-none focus:outline-none shadow-2xl border-4 border-white back-button-glow"
             style={{
               ...CONTROL_BUTTON_STYLE,
               backgroundColor: BACK_BUTTON_COLOR,
@@ -202,7 +206,11 @@ function DrumsView({ leftButtons, voicePreference, onBack }) {
               style={{ 
                 fontSize: 'clamp(24px, 3vw, 48px)',
                 ...LABEL_STYLE,
-                textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
+                textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
+                whiteSpace: 'normal',
+                wordWrap: 'break-word',
+                maxWidth: '90%',
+                padding: '0 4px',
               }}
             >
               BACK
@@ -234,7 +242,11 @@ function DrumsView({ leftButtons, voicePreference, onBack }) {
                   style={{ 
                     fontSize: 'clamp(24px, 3vw, 48px)',
                     ...LABEL_STYLE,
-                    textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
+                    textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
+                    whiteSpace: 'normal',
+                    wordWrap: 'break-word',
+                    maxWidth: '90%',
+                    padding: '0 4px',
                   }}
                 >
                   {leftButtons.bottom.label}
@@ -267,6 +279,9 @@ function DrumsView({ leftButtons, voicePreference, onBack }) {
                 style={{ 
                   fontSize: 'clamp(28px, 5vw, 56px)',
                   ...LABEL_STYLE,
+                  whiteSpace: 'normal',
+                  wordWrap: 'break-word',
+                  maxWidth: '60%',
                 }}
               >
                 {drum.label}

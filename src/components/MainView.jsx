@@ -49,22 +49,22 @@ const YES_NO_BUTTON_STYLE = {
   cursor: 'pointer',
 };
 
-// Smaller Yes/No buttons when PLAY button is shown (Drums mode)
+// Yes/No buttons when PLAY button is shown (Drums mode) - bigger for accessibility
 const YES_NO_BUTTON_DRUMS_STYLE = {
-  width: 'min(22vw, 28vh)',
-  height: 'min(22vw, 28vh)',
-  minWidth: '140px',
-  minHeight: '140px',
+  width: 'min(28vw, 34vh)',
+  height: 'min(28vw, 34vh)',
+  minWidth: '180px',
+  minHeight: '180px',
   touchAction: 'manipulation',
   cursor: 'pointer',
 };
 
-// PLAY button style (same size as Yes/No in Drums mode)
+// PLAY button style (same size as Yes/No in Drums mode) - bigger for accessibility
 const PLAY_BUTTON_STYLE = {
-  width: 'min(22vw, 28vh)',
-  height: 'min(22vw, 28vh)',
-  minWidth: '140px',
-  minHeight: '140px',
+  width: 'min(28vw, 34vh)',
+  height: 'min(28vw, 34vh)',
+  minWidth: '180px',
+  minHeight: '180px',
   touchAction: 'manipulation',
   cursor: 'pointer',
 };
@@ -336,7 +336,11 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
                   style={{ 
                     fontSize: isDrumsSelected ? 'clamp(20px, 3vw, 40px)' : 'clamp(36px, 5vw, 72px)',
                     ...LABEL_STYLE,
-                    textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
+                    textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
+                    whiteSpace: 'normal',
+                    wordWrap: 'break-word',
+                    maxWidth: '90%',
+                    padding: '0 4px',
                   }}
                 >
                   {leftButtons.top.label}
@@ -398,7 +402,11 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
                   style={{ 
                     fontSize: isDrumsSelected ? 'clamp(20px, 3vw, 40px)' : 'clamp(36px, 5vw, 72px)',
                     ...LABEL_STYLE,
-                    textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
+                    textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
+                    whiteSpace: 'normal',
+                    wordWrap: 'break-word',
+                    maxWidth: '90%',
+                    padding: '0 4px',
                   }}
                 >
                   {leftButtons.bottom.label}
@@ -460,12 +468,15 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
                   )}
                 </button>
 
-                {/* Title/Label - reduced by 50% for better fit with long words */}
+                {/* Title/Label - reduced by 50% for better fit with long words, with text wrapping */}
                 <div 
                   className="font-bold text-center px-4 my-6"
                   style={{ 
                     fontSize: 'clamp(24px, 7vw, 80px)',
-                    ...LABEL_STYLE
+                    ...LABEL_STYLE,
+                    whiteSpace: 'normal',
+                    wordWrap: 'break-word',
+                    maxWidth: '90%',
                   }}
                 >
                   {currentCard.label}
@@ -696,7 +707,7 @@ function ThumbnailSidebar({ cards, currentIndex, getCardColor, images }) {
                 </div>
               )}
               
-              {/* Thumbnail label - reduced size for clarity */}
+              {/* Thumbnail label - reduced size for clarity, with text wrapping */}
               <div 
                 className={`
                   font-bold text-center leading-tight
@@ -708,8 +719,12 @@ function ThumbnailSidebar({ cards, currentIndex, getCardColor, images }) {
                   maxWidth: '100%',
                   overflow: 'hidden',
                   textOverflow: 'ellipsis',
-                  whiteSpace: 'nowrap',
+                  whiteSpace: 'normal',
+                  wordWrap: 'break-word',
                   padding: '0 4px',
+                  display: '-webkit-box',
+                  WebkitLineClamp: 2,
+                  WebkitBoxOrient: 'vertical',
                 }}
               >
                 {card.label}
