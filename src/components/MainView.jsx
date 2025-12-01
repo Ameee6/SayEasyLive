@@ -718,7 +718,6 @@ function ThumbnailSidebar({ cards, currentIndex, getCardColor, images }) {
                   fontFamily: "'Quicksand', sans-serif",
                   maxWidth: '100%',
                   overflow: 'hidden',
-                  textOverflow: 'ellipsis',
                   whiteSpace: 'normal',
                   wordWrap: 'break-word',
                   padding: '0 4px',
