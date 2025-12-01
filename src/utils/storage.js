@@ -45,7 +45,7 @@ export const getDefaultDashboardSettings = () => ({
     {
       id: 'preset-play',
       label: 'Play',
-      emoji: '🧸',
+      emoji: '🧱',
       speakText: 'Play',
       isPreset: true,
       imageId: null
