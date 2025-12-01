@@ -9,6 +9,7 @@ import { loadDashboardSettings, saveDashboardSettings } from './utils/storage';
 function App() {
   const [currentView, setCurrentView] = useState('home'); // 'home', 'main', 'drums', or 'settings'
   const [dashboardSettings, setDashboardSettings] = useState(loadDashboardSettings());
+  const [highlightedCardIndex, setHighlightedCardIndex] = useState(null); // Track which card to highlight when returning to main view
 
   // Initialize speech synthesis on mount
   useEffect(() => {
@@ -48,6 +49,7 @@ function App() {
 
   // Handle navigation from homepage to main communication app
   const handleNavigateToMain = () => {
+    setHighlightedCardIndex(null); // Reset highlighted card when navigating fresh to main
     setCurrentView('main');
   };
 
@@ -56,8 +58,12 @@ function App() {
     setCurrentView('drums');
   };
 
-  // Handle going back from Drums view to main view
+  // Handle going back from Drums view to main view - highlight the Drums card
   const handleBackFromDrums = () => {
+    // Find the index of the Drums card (the card with isInteractive: true)
+    const cards = getCards();
+    const drumsIndex = cards.findIndex(card => card.isInteractive === true);
+    setHighlightedCardIndex(drumsIndex >= 0 ? drumsIndex : null);
     setCurrentView('main');
   };
 
@@ -97,6 +103,7 @@ function App() {
       voicePreference={dashboardSettings.voicePreference}
       onExit={handleExitToHome}
       onPlayDrums={handlePlayDrums}
+      initialCardIndex={highlightedCardIndex}
     />
   );
 }

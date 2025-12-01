@@ -84,8 +84,8 @@ const LABEL_STYLE = {
   color: '#FFFFFF'
 };
 
-function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, onExit, onPlayDrums }) {
-  const [currentIndex, setCurrentIndex] = useState(0);
+function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, onExit, onPlayDrums, initialCardIndex = null }) {
+  const [currentIndex, setCurrentIndex] = useState(initialCardIndex !== null && initialCardIndex >= 0 && initialCardIndex < cards.length ? initialCardIndex : 0);
   const [direction, setDirection] = useState(0); // -1 for up, 1 for down, 0 for initial
   const [images, setImages] = useState({}); // Images loaded from IndexedDB
 
