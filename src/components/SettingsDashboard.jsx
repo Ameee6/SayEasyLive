@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { loadDashboardSettings, saveDashboardSettings, loadRemovedCards, saveRemovedCards } from '../utils/storage';
 import { saveImage, loadAllImages, fileToDataUrl, resizeImage } from '../utils/imageStorage';
 import { presetCards } from '../data/defaultCards';
@@ -27,6 +28,13 @@ const NO_BUTTON_COLOR = '#FF6D00';
 // Maximum number of removed custom cards to store
 const MAX_REMOVED_CARDS = 10;
 
+// Animation constants for portrait mode landscape recommendation icon
+const PORTRAIT_ANIMATION = {
+  ROTATION_ANGLES: [0, 360, 360, 720, 720, 1080], // 3 full rotations
+  DURATION_SECONDS: 6,
+  TIMING_KEYFRAMES: [0, 0.167, 0.5, 0.667, 0.833, 1], // Spin, pause, spin, pause, spin
+};
+
 // ID prefix constants for card type identification
 const CARD_ID_PREFIX = 'card-';
 const PRESET_ID_PREFIX = 'preset-';
@@ -44,9 +52,21 @@ function SettingsDashboard({ onSave, onBack }) {
   const [showRemovedCards, setShowRemovedCards] = useState(false);
   const [showPresetCards, setShowPresetCards] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [isPortrait, setIsPortrait] = useState(false);
+  const [draggedIndex, setDraggedIndex] = useState(null);
   
   const fileInputRef = useRef(null);
   const currentUploadTarget = useRef(null);
+
+  // Detect portrait mode on mount and orientation change
+  useEffect(() => {
+    const checkPortrait = () => {
+      setIsPortrait(window.innerHeight > window.innerWidth);
+    };
+    checkPortrait();
+    window.addEventListener('resize', checkPortrait);
+    return () => window.removeEventListener('resize', checkPortrait);
+  }, []);
 
   // Load all images on mount
   useEffect(() => {
@@ -208,9 +228,9 @@ function SettingsDashboard({ onSave, onBack }) {
     const newId = generateUniqueId();
     const newCard = {
       id: newId,
-      label: `Card ${settings.scrollCards.length + 1}`,
+      label: 'Card',
       emoji: '😊',
-      speakText: `Card ${settings.scrollCards.length + 1}`,
+      speakText: 'Card',
       isPreset: false, // Custom card, not preset
       imageId: null
     };
@@ -255,6 +275,40 @@ function SettingsDashboard({ onSave, onBack }) {
     setSettings(prev => ({ ...prev, scrollCards: newCards }));
   };
 
+  // Reorder cards by drag and drop
+  const reorderCards = (fromIndex, toIndex) => {
+    if (fromIndex === toIndex) return;
+    
+    const newCards = [...settings.scrollCards];
+    const [movedCard] = newCards.splice(fromIndex, 1);
+    newCards.splice(toIndex, 0, movedCard);
+    setSettings(prev => ({ ...prev, scrollCards: newCards }));
+  };
+
+  // Handle drag start
+  const handleDragStart = (index) => {
+    setDraggedIndex(index);
+  };
+
+  // Handle drag over - preventDefault is required to enable dropping
+  // Visual feedback is provided by the opacity change on the dragged card
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  // Handle drop
+  const handleDrop = (e, toIndex) => {
+    e.preventDefault();
+    if (draggedIndex === null) return;
+    reorderCards(draggedIndex, toIndex);
+    setDraggedIndex(null);
+  };
+
+  // Handle drag end
+  const handleDragEnd = () => {
+    setDraggedIndex(null);
+  };
+
   // Permanently delete a card from the removed cards list by card ID
   const permanentlyDeleteRemovedCard = (cardId) => {
     const updatedRemovedCards = removedCards.filter(c => c.id !== cardId);
@@ -293,9 +347,9 @@ function SettingsDashboard({ onSave, onBack }) {
       for (let i = currentCount; i < count; i++) {
         newCards.push({
           id: generateUniqueId(),
-          label: `Card ${i + 1}`,
+          label: 'Card',
           emoji: '😊',
-          speakText: `Card ${i + 1}`,
+          speakText: 'Card',
           isPreset: false,
           imageId: null
         });
@@ -365,20 +419,78 @@ function SettingsDashboard({ onSave, onBack }) {
 
       {/* Mobile Landscape Recommendation */}
       <div className="md:hidden bg-yellow-900/60 border-b border-yellow-700 px-4 py-2 text-center flex-shrink-0">
-        <p className="text-sm text-yellow-100">
-          <span className="font-semibold">📐 Recommended:</span> Use landscape mode (turn your phone sideways) or a tablet for best editing experience.
+        <p className="text-sm text-yellow-100 flex items-center justify-center gap-1">
+          <motion.span
+            className="inline-block font-semibold"
+            animate={isPortrait ? {
+              rotate: PORTRAIT_ANIMATION.ROTATION_ANGLES,
+            } : {}}
+            transition={isPortrait ? {
+              duration: PORTRAIT_ANIMATION.DURATION_SECONDS,
+              times: PORTRAIT_ANIMATION.TIMING_KEYFRAMES,
+              ease: "easeInOut",
+            } : {}}
+          >
+            📐
+          </motion.span>
+          <span className="font-semibold">Recommended:</span> Use landscape mode (turn your phone sideways) or a tablet for best editing experience.
         </p>
       </div>
 
-      {/* Header */}
-      <div className="flex justify-between items-center p-4 bg-gray-800 border-b border-gray-700 flex-shrink-0">
-        <h1 className="text-xl md:text-2xl font-bold">SayEasy Settings Dashboard</h1>
-        <button
-          onClick={onBack}
-          className="px-3 py-2 md:px-4 md:py-2 bg-gray-600 rounded-lg hover:bg-gray-500 text-base md:text-lg"
-        >
-          ← Back
-        </button>
+      {/* Header with action buttons */}
+      <div className="p-4 bg-gray-800 border-b border-gray-700 flex-shrink-0">
+        {/* Desktop layout: Back on left, title centered, Cancel/Save on right */}
+        <div className="hidden md:flex justify-between items-center">
+          <button
+            onClick={onBack}
+            className="px-4 py-2 bg-gray-600 rounded-lg hover:bg-gray-500 text-lg"
+          >
+            ← Back
+          </button>
+          <h1 className="text-2xl font-bold">SayEasy Dashboard</h1>
+          <div className="flex gap-3">
+            <button
+              onClick={onBack}
+              className="px-4 py-2 bg-gray-600 rounded-lg hover:bg-gray-500 text-lg"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="px-6 py-2 bg-green-600 rounded-lg hover:bg-green-500 text-lg font-semibold disabled:opacity-50"
+            >
+              {isSaving ? 'Saving...' : '✓ Save & Apply'}
+            </button>
+          </div>
+        </div>
+        {/* Mobile layout: title and back on first row, Cancel/Save below */}
+        <div className="md:hidden">
+          <div className="flex justify-between items-center mb-3">
+            <h1 className="text-xl font-bold">SayEasy Dashboard</h1>
+            <button
+              onClick={onBack}
+              className="px-3 py-2 bg-gray-600 rounded-lg hover:bg-gray-500 text-base"
+            >
+              ← Back
+            </button>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={onBack}
+              className="flex-1 px-4 py-2 bg-gray-600 rounded-lg hover:bg-gray-500 text-base"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={isSaving}
+              className="flex-1 px-4 py-2 bg-green-600 rounded-lg hover:bg-green-500 text-base font-semibold disabled:opacity-50"
+            >
+              {isSaving ? 'Saving...' : '✓ Save & Apply'}
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Main content area - split into preview and sidebar on larger screens, stacked on mobile */}
@@ -401,6 +513,11 @@ function SettingsDashboard({ onSave, onBack }) {
                 isEditing={editingItem?.type === 'main-top'}
                 renderContent={renderButtonContent}
               />
+              
+              {/* Instructional text between buttons */}
+              <p className="text-xs text-gray-400 text-center px-2 py-2 max-w-[140px]">
+                Edit text/images by clicking on the text or images.
+              </p>
               
               {/* Bottom main button (No/All Done) */}
               <EditableButton
@@ -490,26 +607,6 @@ function SettingsDashboard({ onSave, onBack }) {
             </div>
           </div>
 
-          {/* Card count selector */}
-          <div className="p-4 border-b border-gray-600">
-            <h3 className="text-lg font-semibold mb-3">Number of Scroll Cards</h3>
-            <div className="flex flex-wrap gap-2">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
-                <button
-                  key={num}
-                  onClick={() => setCardCount(num)}
-                  className={`w-10 h-10 rounded-lg text-lg font-bold transition-colors ${
-                    settings.scrollCards.length === num
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
-                  }`}
-                >
-                  {num}
-                </button>
-              ))}
-            </div>
-          </div>
-
           {/* Scroll cards editor */}
           <div className="flex-1 p-4 md:overflow-y-auto">
             <div className="flex justify-between items-center mb-3">
@@ -524,7 +621,10 @@ function SettingsDashboard({ onSave, onBack }) {
               )}
             </div>
 
-            {/* Image upload hint for mobile users */}
+            {/* Guidelines for users */}
+            <p className="text-sm text-gray-400 mb-2">
+              Add up to 10 scroll cards.
+            </p>
             <p className="text-sm text-gray-400 mb-4">
               📷 Tap any card image to upload. You can use a photo from your gallery or take a new picture.
             </p>
@@ -583,6 +683,11 @@ function SettingsDashboard({ onSave, onBack }) {
                   onEditLabel={() => startEditing('card', idx)}
                   onRemove={() => removeCard(idx)}
                   canRemove={settings.scrollCards.length > 1}
+                  isDragging={draggedIndex === idx}
+                  onDragStart={() => handleDragStart(idx)}
+                  onDragOver={handleDragOver}
+                  onDrop={(e) => handleDrop(e, idx)}
+                  onDragEnd={handleDragEnd}
                 />
               ))}
             </div>
@@ -675,23 +780,6 @@ function SettingsDashboard({ onSave, onBack }) {
           </div>
         </div>
       )}
-
-      {/* Bottom action bar */}
-      <div className="p-4 bg-gray-800 border-t border-gray-600 flex justify-end gap-4">
-        <button
-          onClick={onBack}
-          className="px-6 py-3 bg-gray-600 rounded-lg hover:bg-gray-500 text-lg"
-        >
-          Cancel
-        </button>
-        <button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="px-8 py-4 bg-green-600 rounded-xl hover:bg-green-500 text-xl font-bold min-w-[200px] disabled:opacity-50"
-        >
-          {isSaving ? 'Saving...' : '✓ Save & Apply'}
-        </button>
-      </div>
     </div>
   );
 }
@@ -720,16 +808,27 @@ function EditableButton({ item, imageId, color, onUpload, onEditLabel, isEditing
 }
 
 // Card editor row component
-function CardEditor({ card, index, color, imageUrl, isEditing, onUpload, onEditLabel, onRemove, canRemove }) {
+function CardEditor({ card, index, color, imageUrl, isEditing, onUpload, onEditLabel, onRemove, canRemove, isDragging, onDragStart, onDragOver, onDrop, onDragEnd }) {
   const isPreset = card.isPreset;
+  
+  const baseClasses = "flex items-center gap-3 p-3 rounded-lg cursor-grab active:cursor-grabbing transition-opacity";
+  const opacityClass = isDragging ? 'opacity-50' : 'opacity-100';
   
   return (
     <div 
-      className="flex items-center gap-3 p-3 rounded-lg"
+      className={`${baseClasses} ${opacityClass}`}
       style={{ backgroundColor: `${color}33`, borderLeft: `4px solid ${color}` }}
+      draggable
+      onDragStart={onDragStart}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+      onDragEnd={onDragEnd}
     >
-      {/* Card number */}
-      <div className="w-6 text-gray-400 font-bold">#{index + 1}</div>
+      {/* Drag handle */}
+      <div className="w-6 text-gray-400 font-bold flex flex-col items-center" title="Drag to reorder">
+        <span className="text-xs leading-none">⋮⋮</span>
+        <span className="text-sm">#{index + 1}</span>
+      </div>
       
       {/* Image/emoji display - clickable for custom cards, static for preset */}
       {isPreset ? (
