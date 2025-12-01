@@ -19,6 +19,7 @@ const CARD_COLORS = [
 // Yes/No button colors - bright, fun, distinct from cards
 const YES_BUTTON_COLOR = '#00E676'; // Bright Lime Green
 const NO_BUTTON_COLOR = '#FF6D00';  // Bright Orange
+const PLAY_BUTTON_COLOR = '#EC4899'; // Hot Pink for PLAY button
 
 // Thumbnail sidebar configuration
 const THUMBNAIL_SIZE_BREAKPOINT = 7; // Cards above this threshold get smaller thumbnails
@@ -48,6 +49,26 @@ const YES_NO_BUTTON_STYLE = {
   cursor: 'pointer',
 };
 
+// Smaller Yes/No buttons when PLAY button is shown (Drums mode)
+const YES_NO_BUTTON_DRUMS_STYLE = {
+  width: 'min(22vw, 28vh)',
+  height: 'min(22vw, 28vh)',
+  minWidth: '140px',
+  minHeight: '140px',
+  touchAction: 'manipulation',
+  cursor: 'pointer',
+};
+
+// PLAY button style (same size as Yes/No in Drums mode)
+const PLAY_BUTTON_STYLE = {
+  width: 'min(22vw, 28vh)',
+  height: 'min(22vw, 28vh)',
+  minWidth: '140px',
+  minHeight: '140px',
+  touchAction: 'manipulation',
+  cursor: 'pointer',
+};
+
 const CARD_EMOJI_BUTTON_STYLE = {
   width: 'min(52vw, 500px)',
   height: 'min(52vw, 500px)',
@@ -63,7 +84,7 @@ const LABEL_STYLE = {
   color: '#FFFFFF'
 };
 
-function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, onExit }) {
+function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, onExit, onPlayDrums }) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0); // -1 for up, 1 for down, 0 for initial
   const [images, setImages] = useState({}); // Images loaded from IndexedDB
@@ -84,6 +105,10 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
 
   // Wheel event debounce ref
   const wheelTimeoutRef = useRef(null);
+
+  // Check if the current card is the Drums card (interactive)
+  const currentCard = cards[currentIndex];
+  const isDrumsSelected = currentCard?.id === 'preset-drums' || currentCard?.isInteractive;
 
   const handleSpeak = useCallback((text) => {
     speak(text, voicePreference);
@@ -224,9 +249,6 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
     }
   }, [goToNextCard, goToPrevCard]);
 
-  // Get current card
-  const currentCard = cards[currentIndex];
-
   // Yes button handlers with animation and long-press
   const handleYesPress = () => {
     handleSpeak(leftButtons.top.speakText);
@@ -282,11 +304,11 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
 
       {/* Main content area */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Panel - 1/3 width - Yes/No circular buttons */}
+        {/* Left Panel - 1/3 width - Yes/No circular buttons (+ PLAY when Drums selected) */}
         <div className="w-1/3 flex flex-col items-center justify-around border-r-8 border-black p-4"
              style={{ backgroundColor: '#1a1a2e' }}>
           
-          {/* Yes button - perfectly circular, large touch zone */}
+          {/* Yes button - smaller when Drums is selected to make room for PLAY */}
           <button
             onMouseDown={handleYesPress}
             onMouseUp={handleYesRelease}
@@ -296,7 +318,7 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
             aria-label={leftButtons.top.speakText}
             className={`flex flex-col items-center justify-center rounded-full outline-none focus:outline-none shadow-2xl border-4 border-white overflow-hidden ${yesButtonAnimating ? 'spin-on-press' : ''}`}
             style={{
-              ...YES_NO_BUTTON_STYLE,
+              ...(isDrumsSelected ? YES_NO_BUTTON_DRUMS_STYLE : YES_NO_BUTTON_STYLE),
               backgroundColor: YES_BUTTON_COLOR,
             }}
           >
@@ -308,11 +330,11 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
               />
             ) : (
               <>
-                <div style={{ fontSize: 'min(14vw, 7vh)', lineHeight: 1 }}>{leftButtons.top.emoji}</div>
+                <div style={{ fontSize: isDrumsSelected ? 'min(10vw, 5vh)' : 'min(14vw, 7vh)', lineHeight: 1 }}>{leftButtons.top.emoji}</div>
                 <div 
                   className="font-bold text-center leading-tight mt-1"
                   style={{ 
-                    fontSize: 'clamp(36px, 5vw, 72px)',
+                    fontSize: isDrumsSelected ? 'clamp(20px, 3vw, 40px)' : 'clamp(36px, 5vw, 72px)',
                     ...LABEL_STYLE,
                     textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
                   }}
@@ -323,7 +345,32 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
             )}
           </button>
 
-          {/* No button - perfectly circular, same size as Yes */}
+          {/* PLAY button - only shown when Drums is selected */}
+          {isDrumsSelected && (
+            <button
+              onClick={onPlayDrums}
+              aria-label="Play Drums"
+              className="flex flex-col items-center justify-center rounded-full outline-none focus:outline-none shadow-2xl border-4 border-white play-button-glow"
+              style={{
+                ...PLAY_BUTTON_STYLE,
+                backgroundColor: PLAY_BUTTON_COLOR,
+              }}
+            >
+              <div style={{ fontSize: 'min(10vw, 5vh)', lineHeight: 1 }}>▶️</div>
+              <div 
+                className="font-bold text-center leading-tight mt-1"
+                style={{ 
+                  fontSize: 'clamp(20px, 3vw, 40px)',
+                  ...LABEL_STYLE,
+                  textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
+                }}
+              >
+                PLAY
+              </div>
+            </button>
+          )}
+
+          {/* No button - smaller when Drums is selected */}
           <button
             onMouseDown={handleNoPress}
             onMouseUp={handleNoRelease}
@@ -333,7 +380,7 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
             aria-label={leftButtons.bottom.speakText}
             className={`flex flex-col items-center justify-center rounded-full outline-none focus:outline-none shadow-2xl border-4 border-white overflow-hidden ${noButtonAnimating ? 'spin-on-press' : ''}`}
             style={{
-              ...YES_NO_BUTTON_STYLE,
+              ...(isDrumsSelected ? YES_NO_BUTTON_DRUMS_STYLE : YES_NO_BUTTON_STYLE),
               backgroundColor: NO_BUTTON_COLOR,
             }}
           >
@@ -345,11 +392,11 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
               />
             ) : (
               <>
-                <div style={{ fontSize: 'min(14vw, 7vh)', lineHeight: 1 }}>{leftButtons.bottom.emoji}</div>
+                <div style={{ fontSize: isDrumsSelected ? 'min(10vw, 5vh)' : 'min(14vw, 7vh)', lineHeight: 1 }}>{leftButtons.bottom.emoji}</div>
                 <div 
                   className="font-bold text-center leading-tight mt-1"
                   style={{ 
-                    fontSize: 'clamp(36px, 5vw, 72px)',
+                    fontSize: isDrumsSelected ? 'clamp(20px, 3vw, 40px)' : 'clamp(36px, 5vw, 72px)',
                     ...LABEL_STYLE,
                     textShadow: '2px 2px 4px rgba(0,0,0,0.3)'
                   }}
@@ -649,14 +696,14 @@ function ThumbnailSidebar({ cards, currentIndex, getCardColor, images }) {
                 </div>
               )}
               
-              {/* Thumbnail label */}
+              {/* Thumbnail label - reduced size by ~50% for clarity */}
               <div 
                 className={`
                   font-bold text-center leading-tight
                   ${isActive ? 'text-black' : 'text-gray-600'}
                 `}
                 style={{ 
-                  fontSize: cards.length > THUMBNAIL_SIZE_BREAKPOINT ? 'clamp(10px, 1.5vw, 14px)' : 'clamp(12px, 2vw, 18px)',
+                  fontSize: cards.length > THUMBNAIL_SIZE_BREAKPOINT ? 'clamp(5px, 0.75vw, 7px)' : 'clamp(6px, 1vw, 9px)',
                   fontFamily: "'Quicksand', sans-serif",
                   maxWidth: '100%',
                   overflow: 'hidden',

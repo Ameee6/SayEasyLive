@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import Homepage from './components/Homepage';
 import MainView from './components/MainView';
+import DrumsView from './components/DrumsView';
 import SettingsDashboard from './components/SettingsDashboard';
 import { initSpeech } from './utils/speech';
 import { loadDashboardSettings, saveDashboardSettings } from './utils/storage';
 
 function App() {
-  const [currentView, setCurrentView] = useState('home'); // 'home', 'main', or 'settings'
+  const [currentView, setCurrentView] = useState('home'); // 'home', 'main', 'drums', or 'settings'
   const [dashboardSettings, setDashboardSettings] = useState(loadDashboardSettings());
 
   // Initialize speech synthesis on mount
@@ -50,6 +51,16 @@ function App() {
     setCurrentView('main');
   };
 
+  // Handle navigation to Drums view
+  const handlePlayDrums = () => {
+    setCurrentView('drums');
+  };
+
+  // Handle going back from Drums view to main view
+  const handleBackFromDrums = () => {
+    setCurrentView('main');
+  };
+
   // Render appropriate view
   if (currentView === 'home') {
     return (
@@ -69,12 +80,23 @@ function App() {
     );
   }
 
+  if (currentView === 'drums') {
+    return (
+      <DrumsView
+        leftButtons={getLeftButtons()}
+        voicePreference={dashboardSettings.voicePreference}
+        onBack={handleBackFromDrums}
+      />
+    );
+  }
+
   return (
     <MainView
       cards={getCards()}
       leftButtons={getLeftButtons()}
       voicePreference={dashboardSettings.voicePreference}
       onExit={handleExitToHome}
+      onPlayDrums={handlePlayDrums}
     />
   );
 }
