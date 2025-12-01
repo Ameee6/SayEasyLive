@@ -261,7 +261,7 @@ function DrumsView({ leftButtons, voicePreference, onBack }) {
                 backgroundColor: drum.color,
               }}
             >
-              <div style={{ fontSize: 'min(8vw, 70px)', lineHeight: 1, marginRight: '12px' }}>{drum.emoji}</div>
+              <div className="mr-3" style={{ fontSize: 'min(8vw, 70px)', lineHeight: 1 }}>{drum.emoji}</div>
               <div 
                 className="font-bold text-center leading-tight"
                 style={{ 
