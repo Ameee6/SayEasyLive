@@ -28,6 +28,13 @@ const NO_BUTTON_COLOR = '#FF6D00';
 // Maximum number of removed custom cards to store
 const MAX_REMOVED_CARDS = 10;
 
+// Animation constants for portrait mode landscape recommendation icon
+const PORTRAIT_ANIMATION = {
+  ROTATION_ANGLES: [0, 360, 360, 720, 720, 1080], // 3 full rotations
+  DURATION_SECONDS: 6,
+  TIMING_KEYFRAMES: [0, 0.167, 0.5, 0.667, 0.833, 1], // Spin, pause, spin, pause, spin
+};
+
 // ID prefix constants for card type identification
 const CARD_ID_PREFIX = 'card-';
 const PRESET_ID_PREFIX = 'preset-';
@@ -283,10 +290,10 @@ function SettingsDashboard({ onSave, onBack }) {
     setDraggedIndex(index);
   };
 
-  // Handle drag over
-  const handleDragOver = (e, index) => {
+  // Handle drag over - preventDefault is required to enable dropping
+  // Visual feedback is provided by the opacity change on the dragged card
+  const handleDragOver = (e) => {
     e.preventDefault();
-    if (draggedIndex === null || draggedIndex === index) return;
   };
 
   // Handle drop
@@ -416,11 +423,11 @@ function SettingsDashboard({ onSave, onBack }) {
           <motion.span
             className="inline-block font-semibold"
             animate={isPortrait ? {
-              rotate: [0, 360, 360, 720, 720, 1080],
+              rotate: PORTRAIT_ANIMATION.ROTATION_ANGLES,
             } : {}}
             transition={isPortrait ? {
-              duration: 6,
-              times: [0, 0.167, 0.5, 0.667, 0.833, 1],
+              duration: PORTRAIT_ANIMATION.DURATION_SECONDS,
+              times: PORTRAIT_ANIMATION.TIMING_KEYFRAMES,
               ease: "easeInOut",
             } : {}}
           >
@@ -678,7 +685,7 @@ function SettingsDashboard({ onSave, onBack }) {
                   canRemove={settings.scrollCards.length > 1}
                   isDragging={draggedIndex === idx}
                   onDragStart={() => handleDragStart(idx)}
-                  onDragOver={(e) => handleDragOver(e, idx)}
+                  onDragOver={handleDragOver}
                   onDrop={(e) => handleDrop(e, idx)}
                   onDragEnd={handleDragEnd}
                 />
@@ -804,9 +811,12 @@ function EditableButton({ item, imageId, color, onUpload, onEditLabel, isEditing
 function CardEditor({ card, index, color, imageUrl, isEditing, onUpload, onEditLabel, onRemove, canRemove, isDragging, onDragStart, onDragOver, onDrop, onDragEnd }) {
   const isPreset = card.isPreset;
   
+  const baseClasses = "flex items-center gap-3 p-3 rounded-lg cursor-grab active:cursor-grabbing transition-opacity";
+  const opacityClass = isDragging ? 'opacity-50' : 'opacity-100';
+  
   return (
     <div 
-      className={`flex items-center gap-3 p-3 rounded-lg cursor-grab active:cursor-grabbing transition-opacity ${isDragging ? 'opacity-50' : 'opacity-100'}`}
+      className={`${baseClasses} ${opacityClass}`}
       style={{ backgroundColor: `${color}33`, borderLeft: `4px solid ${color}` }}
       draggable
       onDragStart={onDragStart}
