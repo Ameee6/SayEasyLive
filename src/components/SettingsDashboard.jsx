@@ -41,7 +41,6 @@ function SettingsDashboard({ onSave, onBack }) {
   const [removedCards, setRemovedCards] = useState(loadRemovedCards());
   const [editingItem, setEditingItem] = useState(null); // { type: 'main-top'|'main-bottom'|'card', index?: number }
   const [tempLabel, setTempLabel] = useState('');
-  const [tempSpeakText, setTempSpeakText] = useState('');
   const [showRemovedCards, setShowRemovedCards] = useState(false);
   const [showPresetCards, setShowPresetCards] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -74,8 +73,12 @@ function SettingsDashboard({ onSave, onBack }) {
   // Get color for a card by index
   const getCardColor = (index) => CARD_COLORS[index % CARD_COLORS.length];
 
-  // Handle image upload trigger
+  // Handle image upload trigger (only for main buttons and custom cards)
   const handleImageUpload = (targetId) => {
+    // Prevent image upload for preset cards
+    if (targetId.startsWith(PRESET_ID_PREFIX)) {
+      return;
+    }
     currentUploadTarget.current = targetId;
     fileInputRef.current?.click();
   };
@@ -123,8 +126,19 @@ function SettingsDashboard({ onSave, onBack }) {
     currentUploadTarget.current = null;
   };
 
-  // Start editing a button/card label
+  // Maximum character limit for label/voice text
+  const MAX_LABEL_LENGTH = 25;
+
+  // Start editing a button/card label (only for main buttons and custom cards)
   const startEditing = (type, index = null) => {
+    // Prevent editing preset cards
+    if (type === 'card' && index !== null) {
+      const card = settings.scrollCards[index];
+      if (card.isPreset) {
+        return; // Don't allow editing preset cards
+      }
+    }
+    
     let item;
     if (type === 'main-top') {
       item = settings.mainButtons.top;
@@ -137,11 +151,10 @@ function SettingsDashboard({ onSave, onBack }) {
     if (item) {
       setEditingItem({ type, index });
       setTempLabel(item.label);
-      setTempSpeakText(item.speakText || item.label);
     }
   };
 
-  // Save edited label
+  // Save edited label - label and speakText are always the same
   const saveEditing = () => {
     if (!editingItem) return;
 
@@ -156,7 +169,7 @@ function SettingsDashboard({ onSave, onBack }) {
           [buttonKey]: {
             ...prev.mainButtons[buttonKey],
             label: tempLabel,
-            speakText: tempSpeakText || tempLabel
+            speakText: tempLabel
           }
         }
       }));
@@ -165,21 +178,19 @@ function SettingsDashboard({ onSave, onBack }) {
       newCards[index] = {
         ...newCards[index],
         label: tempLabel,
-        speakText: tempSpeakText || tempLabel
+        speakText: tempLabel
       };
       setSettings(prev => ({ ...prev, scrollCards: newCards }));
     }
 
     setEditingItem(null);
     setTempLabel('');
-    setTempSpeakText('');
   };
 
   // Cancel editing
   const cancelEditing = () => {
     setEditingItem(null);
     setTempLabel('');
-    setTempSpeakText('');
   };
 
   // Generate unique ID using crypto.randomUUID if available, fallback to timestamp+random
@@ -629,26 +640,17 @@ function SettingsDashboard({ onSave, onBack }) {
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Label (shown on button)</label>
+                <label className="block text-sm text-gray-400 mb-1">Label (shown on button) / Voice Text (what to say)</label>
                 <input
                   type="text"
                   value={tempLabel}
                   onChange={(e) => setTempLabel(e.target.value)}
+                  maxLength={MAX_LABEL_LENGTH}
                   className="w-full px-4 py-3 bg-gray-700 rounded-lg text-white text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter label..."
                   autoFocus
                 />
-              </div>
-              
-              <div>
-                <label className="block text-sm text-gray-400 mb-1">Voice Text (what to say)</label>
-                <input
-                  type="text"
-                  value={tempSpeakText}
-                  onChange={(e) => setTempSpeakText(e.target.value)}
-                  className="w-full px-4 py-3 bg-gray-700 rounded-lg text-white text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  placeholder="What the app will say..."
-                />
+                <p className="text-xs text-gray-500 mt-1">{tempLabel.length}/{MAX_LABEL_LENGTH} characters</p>
               </div>
             </div>
 
@@ -715,6 +717,8 @@ function EditableButton({ item, imageId, color, onUpload, onEditLabel, isEditing
 
 // Card editor row component
 function CardEditor({ card, index, color, imageUrl, isEditing, onUpload, onEditLabel, onRemove, canRemove }) {
+  const isPreset = card.isPreset;
+  
   return (
     <div 
       className="flex items-center gap-3 p-3 rounded-lg"
@@ -723,35 +727,68 @@ function CardEditor({ card, index, color, imageUrl, isEditing, onUpload, onEditL
       {/* Card number */}
       <div className="w-6 text-gray-400 font-bold">#{index + 1}</div>
       
-      {/* Image/emoji button */}
-      <button
-        onClick={onUpload}
-        className="w-14 h-14 rounded-lg flex items-center justify-center bg-white/20 hover:bg-white/30 transition-colors"
-        title="Tap to upload image"
-      >
-        {imageUrl ? (
-          <img src={imageUrl} alt={card.label} className="w-12 h-12 object-cover rounded" />
-        ) : (
-          <span className="text-2xl">{card.emoji}</span>
-        )}
-      </button>
-      
-      {/* Label edit button */}
-      <button
-        onClick={onEditLabel}
-        className={`flex-1 px-3 py-2 rounded text-left hover:bg-white/10 ${isEditing ? 'bg-blue-600/50' : ''}`}
-        title="Tap to edit label"
-      >
-        <div className="font-medium flex items-center gap-2">
-          {card.label}
-          {card.isInteractive && (
-            <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full">
-              (Interactive!)
-            </span>
+      {/* Image/emoji display - clickable for custom cards, static for preset */}
+      {isPreset ? (
+        <div
+          className="w-14 h-14 rounded-lg flex items-center justify-center bg-white/20 cursor-not-allowed opacity-70"
+          title="Preset card image cannot be changed"
+        >
+          {imageUrl ? (
+            <img src={imageUrl} alt={card.label} className="w-12 h-12 object-cover rounded" />
+          ) : (
+            <span className="text-2xl">{card.emoji}</span>
           )}
         </div>
-        <div className="text-xs text-gray-400">{card.speakText}</div>
-      </button>
+      ) : (
+        <button
+          onClick={onUpload}
+          className="w-14 h-14 rounded-lg flex items-center justify-center bg-white/20 hover:bg-white/30 transition-colors"
+          title="Tap to upload image"
+        >
+          {imageUrl ? (
+            <img src={imageUrl} alt={card.label} className="w-12 h-12 object-cover rounded" />
+          ) : (
+            <span className="text-2xl">{card.emoji}</span>
+          )}
+        </button>
+      )}
+      
+      {/* Label display - clickable for custom cards, static for preset */}
+      {isPreset ? (
+        <div
+          className="flex-1 px-3 py-2 rounded text-left cursor-not-allowed opacity-70"
+          title="Preset card label cannot be changed"
+        >
+          <div className="font-medium flex items-center gap-2">
+            {card.label}
+            {card.isInteractive && (
+              <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full">
+                (Interactive!)
+              </span>
+            )}
+            <span className="text-xs bg-gray-600 text-gray-300 px-2 py-0.5 rounded-full">
+              Preset
+            </span>
+          </div>
+          <div className="text-xs text-gray-400">{card.speakText}</div>
+        </div>
+      ) : (
+        <button
+          onClick={onEditLabel}
+          className={`flex-1 px-3 py-2 rounded text-left hover:bg-white/10 ${isEditing ? 'bg-blue-600/50' : ''}`}
+          title="Tap to edit label"
+        >
+          <div className="font-medium flex items-center gap-2">
+            {card.label}
+            {card.isInteractive && (
+              <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full">
+                (Interactive!)
+              </span>
+            )}
+          </div>
+          <div className="text-xs text-gray-400">{card.speakText}</div>
+        </button>
+      )}
       
       {/* Remove button */}
       {canRemove && (

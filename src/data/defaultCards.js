@@ -27,7 +27,7 @@ export const presetCards = [
   {
     id: 'preset-play',
     label: 'Play',
-    emoji: '🧸',
+    emoji: '🧱',
     speakText: 'Play',
     isPreset: true,
     imageId: null
@@ -84,7 +84,7 @@ export const presetCards = [
   {
     id: 'preset-brush-hair',
     label: 'Brush Hair',
-    emoji: '💇',
+    emoji: '🪮',
     speakText: 'Brush Hair',
     isPreset: true,
     imageId: null
