@@ -159,7 +159,6 @@ function SettingsDashboard({ onSave, onBack }) {
     if (!editingItem) return;
 
     const { type, index } = editingItem;
-    const trimmedLabel = tempLabel.slice(0, MAX_LABEL_LENGTH);
     
     if (type === 'main-top' || type === 'main-bottom') {
       const buttonKey = type === 'main-top' ? 'top' : 'bottom';
@@ -169,8 +168,8 @@ function SettingsDashboard({ onSave, onBack }) {
           ...prev.mainButtons,
           [buttonKey]: {
             ...prev.mainButtons[buttonKey],
-            label: trimmedLabel,
-            speakText: trimmedLabel
+            label: tempLabel,
+            speakText: tempLabel
           }
         }
       }));
@@ -178,8 +177,8 @@ function SettingsDashboard({ onSave, onBack }) {
       const newCards = [...settings.scrollCards];
       newCards[index] = {
         ...newCards[index],
-        label: trimmedLabel,
-        speakText: trimmedLabel
+        label: tempLabel,
+        speakText: tempLabel
       };
       setSettings(prev => ({ ...prev, scrollCards: newCards }));
     }
@@ -645,7 +644,7 @@ function SettingsDashboard({ onSave, onBack }) {
                 <input
                   type="text"
                   value={tempLabel}
-                  onChange={(e) => setTempLabel(e.target.value.slice(0, MAX_LABEL_LENGTH))}
+                  onChange={(e) => setTempLabel(e.target.value)}
                   maxLength={MAX_LABEL_LENGTH}
                   className="w-full px-4 py-3 bg-gray-700 rounded-lg text-white text-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="Enter label..."
