@@ -15,6 +15,7 @@ export const getDefaultSettings = () => ({
 });
 
 // Default dashboard settings structure for MVP
+// Note: scrollCards can contain both preset cards (isPreset: true) and custom cards
 export const getDefaultDashboardSettings = () => ({
   mainButtons: {
     top: {
@@ -34,17 +35,19 @@ export const getDefaultDashboardSettings = () => ({
   },
   scrollCards: [
     {
-      id: 'card-1',
+      id: 'preset-tv',
       label: 'TV',
       emoji: '📺',
       speakText: 'TV',
+      isPreset: true,
       imageId: null
     },
     {
-      id: 'card-2',
+      id: 'preset-play',
       label: 'Play',
       emoji: '🧸',
       speakText: 'Play',
+      isPreset: true,
       imageId: null
     }
   ],
