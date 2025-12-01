@@ -117,7 +117,7 @@ function DrumsView({ leftButtons, voicePreference, onBack }) {
     }
     drumAnimationTimeoutRefs.current[drumId] = setTimeout(() => {
       setDrumAnimating(prev => ({ ...prev, [drumId]: false }));
-    }, 200);
+    }, 400);
 
     // Clear any existing repeat interval
     if (drumRepeatIntervalRefs.current[drumId]) {
@@ -131,7 +131,7 @@ function DrumsView({ leftButtons, voicePreference, onBack }) {
       setDrumAnimating(prev => ({ ...prev, [drumId]: true }));
       setTimeout(() => {
         setDrumAnimating(prev => ({ ...prev, [drumId]: false }));
-      }, 200);
+      }, 400);
     }, DRUM_REPEAT_INTERVAL);
   };
 
