@@ -6,21 +6,22 @@ import { speak } from '../utils/speech';
 // Drum repeat configuration
 const DRUM_REPEAT_INTERVAL = 1500; // 1.5 seconds
 
-// Button styling constants
+// Button styling constants - enlarged for better touch accessibility
 const CONTROL_BUTTON_STYLE = {
-  width: 'min(28vw, 36vh)',
-  height: 'min(28vw, 36vh)',
-  minWidth: '160px',
-  minHeight: '160px',
+  width: 'min(32vw, 42vh)',
+  height: 'min(32vw, 42vh)',
+  minWidth: '200px',
+  minHeight: '200px',
   touchAction: 'manipulation',
   cursor: 'pointer',
 };
 
+// Enlarged drum buttons for easier tapping in vertical layout
 const DRUM_BUTTON_STYLE = {
-  width: 'min(26vw, 260px)',
-  height: 'min(26vw, 260px)',
-  minWidth: '180px',
-  minHeight: '180px',
+  width: 'min(45vw, 320px)',
+  height: 'min(20vh, 220px)',
+  minWidth: '260px',
+  minHeight: '160px',
   touchAction: 'manipulation',
   cursor: 'pointer',
 };
@@ -243,8 +244,8 @@ function DrumsView({ leftButtons, voicePreference, onBack }) {
           </button>
         </div>
 
-        {/* Right Panel - white background with three drum buttons */}
-        <div className="w-2/3 flex items-center justify-around p-8 bg-white">
+        {/* Right Panel - white background with three drum buttons arranged vertically */}
+        <div className="w-2/3 flex flex-col items-center justify-around p-6 bg-white">
           {DRUM_CONFIGS.map((drum) => (
             <button
               key={drum.id}
@@ -254,17 +255,17 @@ function DrumsView({ leftButtons, voicePreference, onBack }) {
               onTouchStart={() => handleDrumPress(drum.id, drum.playSound)}
               onTouchEnd={() => handleDrumRelease(drum.id)}
               aria-label={`Play ${drum.label} drum`}
-              className={`flex flex-col items-center justify-center rounded-full outline-none focus:outline-none shadow-2xl border-8 border-black/20 ${drumAnimating[drum.id] ? 'drum-bounce' : ''}`}
+              className={`flex flex-row items-center justify-center rounded-3xl outline-none focus:outline-none shadow-2xl border-8 border-black/20 ${drumAnimating[drum.id] ? 'drum-bounce' : ''}`}
               style={{
                 ...DRUM_BUTTON_STYLE,
                 backgroundColor: drum.color,
               }}
             >
-              <div style={{ fontSize: 'min(10vw, 80px)', lineHeight: 1 }}>{drum.emoji}</div>
+              <div style={{ fontSize: 'min(8vw, 70px)', lineHeight: 1, marginRight: '12px' }}>{drum.emoji}</div>
               <div 
-                className="font-bold text-center leading-tight mt-2"
+                className="font-bold text-center leading-tight"
                 style={{ 
-                  fontSize: 'clamp(24px, 4vw, 48px)',
+                  fontSize: 'clamp(28px, 5vw, 56px)',
                   ...LABEL_STYLE,
                 }}
               >

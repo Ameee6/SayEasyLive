@@ -2,12 +2,12 @@
 
 export const defaultLeftButtons = {
   top: {
-    label: 'More / Yes',
+    label: 'More/Yes',
     emoji: '👏',
     speakText: 'More, Yes'
   },
   bottom: {
-    label: 'All Done / No',
+    label: 'All Done/No',
     emoji: '🛑',
     speakText: 'All Done, No'
   }
