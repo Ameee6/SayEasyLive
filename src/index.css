@@ -125,3 +125,34 @@ body:has(.scrollable-page) #root {
 .scrollable-page * {
   touch-action: pan-y !important;
 }
+
+/* Drum button bounce animation */
+@keyframes drumBounce {
+  0% { transform: scale(1); }
+  50% { transform: scale(0.9); }
+  100% { transform: scale(1); }
+}
+
+.drum-bounce {
+  animation: drumBounce 0.2s ease-out;
+}
+
+/* PLAY button glow/pulse animation */
+@keyframes playButtonGlow {
+  0%, 100% {
+    box-shadow: 0 0 20px 5px rgba(236, 72, 153, 0.6),
+                0 0 40px 10px rgba(236, 72, 153, 0.4),
+                0 0 60px 15px rgba(236, 72, 153, 0.2);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 30px 10px rgba(236, 72, 153, 0.8),
+                0 0 60px 20px rgba(236, 72, 153, 0.5),
+                0 0 90px 30px rgba(236, 72, 153, 0.3);
+    transform: scale(1.05);
+  }
+}
+
+.play-button-glow {
+  animation: playButtonGlow 1.5s ease-in-out infinite;
+}
