@@ -106,9 +106,9 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
   // Wheel event debounce ref
   const wheelTimeoutRef = useRef(null);
 
-  // Check if the current card is the Drums card (interactive)
+  // Check if the current card is interactive (e.g., Drums)
   const currentCard = cards[currentIndex];
-  const isDrumsSelected = currentCard?.id === 'preset-drums' || currentCard?.isInteractive;
+  const isDrumsSelected = currentCard?.isInteractive === true;
 
   const handleSpeak = useCallback((text) => {
     speak(text, voicePreference);
@@ -696,14 +696,14 @@ function ThumbnailSidebar({ cards, currentIndex, getCardColor, images }) {
                 </div>
               )}
               
-              {/* Thumbnail label - reduced size by ~50% for clarity */}
+              {/* Thumbnail label - reduced size for clarity */}
               <div 
                 className={`
                   font-bold text-center leading-tight
                   ${isActive ? 'text-black' : 'text-gray-600'}
                 `}
                 style={{ 
-                  fontSize: cards.length > THUMBNAIL_SIZE_BREAKPOINT ? 'clamp(5px, 0.75vw, 7px)' : 'clamp(6px, 1vw, 9px)',
+                  fontSize: cards.length > THUMBNAIL_SIZE_BREAKPOINT ? 'clamp(8px, 1vw, 10px)' : 'clamp(10px, 1.2vw, 12px)',
                   fontFamily: "'Quicksand', sans-serif",
                   maxWidth: '100%',
                   overflow: 'hidden',
