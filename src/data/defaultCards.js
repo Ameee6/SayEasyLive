@@ -25,10 +25,10 @@ export const presetCards = [
     imageId: null
   },
   {
-    id: 'preset-play',
-    label: 'Play',
-    emoji: '🧱',
-    speakText: 'Play',
+    id: 'preset-toys',
+    label: 'Toys',
+    emoji: '🧸',
+    speakText: 'Toys',
     isPreset: true,
     imageId: null
   },
@@ -115,9 +115,9 @@ export const defaultCards = [
   },
   {
     id: 3,
-    label: 'Play',
+    label: 'Toys',
     emoji: '🧸',
-    speakText: 'Play'
+    speakText: 'Toys'
   },
   {
     id: 4,
