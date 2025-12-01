@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { loadDashboardSettings, saveDashboardSettings, loadRemovedCards, saveRemovedCards } from '../utils/storage';
 import { saveImage, loadAllImages, fileToDataUrl, resizeImage } from '../utils/imageStorage';
+import { presetCards } from '../data/defaultCards';
 
 /*
  * FUTURE ENHANCEMENT (Next Phase):
@@ -23,6 +24,17 @@ const CARD_COLORS = [
 const YES_BUTTON_COLOR = '#00E676';
 const NO_BUTTON_COLOR = '#FF6D00';
 
+// Maximum number of removed custom cards to store
+const MAX_REMOVED_CARDS = 10;
+
+// ID prefix constants for card type identification
+const CARD_ID_PREFIX = 'card-';
+const PRESET_ID_PREFIX = 'preset-';
+const MAIN_BUTTON_IDS = ['main-top', 'main-bottom'];
+
+// Helper function to check if a card ID belongs to a card (custom or preset)
+const isCardId = (id) => id.startsWith(CARD_ID_PREFIX) || id.startsWith(PRESET_ID_PREFIX);
+
 function SettingsDashboard({ onSave, onBack }) {
   const [settings, setSettings] = useState(loadDashboardSettings());
   const [images, setImages] = useState({});
@@ -31,6 +43,7 @@ function SettingsDashboard({ onSave, onBack }) {
   const [tempLabel, setTempLabel] = useState('');
   const [tempSpeakText, setTempSpeakText] = useState('');
   const [showRemovedCards, setShowRemovedCards] = useState(false);
+  const [showPresetCards, setShowPresetCards] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   
   const fileInputRef = useRef(null);
@@ -44,6 +57,19 @@ function SettingsDashboard({ onSave, onBack }) {
     };
     loadImages();
   }, []);
+
+  // Get preset cards that are not currently in the scroll cards list
+  const getAvailablePresetCards = () => {
+    const currentPresetIds = settings.scrollCards
+      .filter(card => card.isPreset)
+      .map(card => card.id);
+    return presetCards.filter(card => !currentPresetIds.includes(card.id));
+  };
+
+  // Get only custom cards from removed cards (preset cards don't go to Previously Removed)
+  const getRemovedCustomCards = () => {
+    return removedCards.filter(card => !card.isPreset);
+  };
 
   // Get color for a card by index
   const getCardColor = (index) => CARD_COLORS[index % CARD_COLORS.length];
@@ -68,7 +94,7 @@ function SettingsDashboard({ onSave, onBack }) {
       setImages(prev => ({ ...prev, [targetId]: resizedDataUrl }));
 
       // Update settings with imageId reference
-      if (targetId === 'main-top' || targetId === 'main-bottom') {
+      if (MAIN_BUTTON_IDS.includes(targetId)) {
         const buttonKey = targetId === 'main-top' ? 'top' : 'bottom';
         setSettings(prev => ({
           ...prev,
@@ -80,7 +106,7 @@ function SettingsDashboard({ onSave, onBack }) {
             }
           }
         }));
-      } else if (targetId.startsWith('card-')) {
+      } else if (isCardId(targetId)) {
         const cardIndex = settings.scrollCards.findIndex(c => c.id === targetId);
         if (cardIndex !== -1) {
           const newCards = [...settings.scrollCards];
@@ -159,12 +185,12 @@ function SettingsDashboard({ onSave, onBack }) {
   // Generate unique ID using crypto.randomUUID if available, fallback to timestamp+random
   const generateUniqueId = () => {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) {
-      return `card-${crypto.randomUUID()}`;
+      return `${CARD_ID_PREFIX}${crypto.randomUUID()}`;
     }
-    return `card-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+    return `${CARD_ID_PREFIX}${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
   };
 
-  // Add new card
+  // Add new custom card (paid feature)
   const addCard = () => {
     if (settings.scrollCards.length >= 10) return;
     
@@ -174,6 +200,7 @@ function SettingsDashboard({ onSave, onBack }) {
       label: `Card ${settings.scrollCards.length + 1}`,
       emoji: '😊',
       speakText: `Card ${settings.scrollCards.length + 1}`,
+      isPreset: false, // Custom card, not preset
       imageId: null
     };
     
@@ -183,27 +210,53 @@ function SettingsDashboard({ onSave, onBack }) {
     }));
   };
 
-  // Remove card (save to removed cards for re-adding)
+  // Add a preset card to the main screen
+  const addPresetCard = (presetCard) => {
+    if (settings.scrollCards.length >= 10) return;
+    
+    // Create a copy of the preset card to add
+    const cardToAdd = { ...presetCard };
+    
+    setSettings(prev => ({
+      ...prev,
+      scrollCards: [...prev.scrollCards, cardToAdd]
+    }));
+  };
+
+  // Remove card
+  // Preset cards: return to the preset cards dropdown (not saved to removed cards)
+  // Custom cards: save to removed cards list for later re-adding (up to MAX_REMOVED_CARDS)
   const removeCard = async (index) => {
     if (settings.scrollCards.length <= 1) return;
     
     const cardToRemove = settings.scrollCards[index];
     
-    // Save to removed cards list
-    const updatedRemovedCards = [...removedCards, cardToRemove];
-    setRemovedCards(updatedRemovedCards);
-    saveRemovedCards(updatedRemovedCards);
+    // Only save custom cards to removed cards list (preset cards return to dropdown)
+    if (!cardToRemove.isPreset) {
+      // Add to removed cards, keeping only the most recent MAX_REMOVED_CARDS
+      const updatedRemovedCards = [...removedCards, cardToRemove].slice(-MAX_REMOVED_CARDS);
+      setRemovedCards(updatedRemovedCards);
+      saveRemovedCards(updatedRemovedCards);
+    }
     
     // Remove from current cards
     const newCards = settings.scrollCards.filter((_, i) => i !== index);
     setSettings(prev => ({ ...prev, scrollCards: newCards }));
   };
 
-  // Re-add a previously removed card
-  const reAddCard = (removedIndex) => {
+  // Permanently delete a card from the removed cards list by card ID
+  const permanentlyDeleteRemovedCard = (cardId) => {
+    const updatedRemovedCards = removedCards.filter(c => c.id !== cardId);
+    setRemovedCards(updatedRemovedCards);
+    saveRemovedCards(updatedRemovedCards);
+  };
+
+  // Re-add a previously removed custom card by card ID
+  const reAddCard = (cardId) => {
     if (settings.scrollCards.length >= 10) return;
     
-    const cardToReAdd = removedCards[removedIndex];
+    const cardToReAdd = removedCards.find(c => c.id === cardId);
+    if (!cardToReAdd) return;
     
     // Add back to scroll cards
     setSettings(prev => ({
@@ -211,8 +264,8 @@ function SettingsDashboard({ onSave, onBack }) {
       scrollCards: [...prev.scrollCards, cardToReAdd]
     }));
     
-    // Remove from removed cards list
-    const updatedRemovedCards = removedCards.filter((_, i) => i !== removedIndex);
+    // Remove from removed cards list by card ID
+    const updatedRemovedCards = removedCards.filter(c => c.id !== cardId);
     setRemovedCards(updatedRemovedCards);
     saveRemovedCards(updatedRemovedCards);
   };
@@ -224,7 +277,7 @@ function SettingsDashboard({ onSave, onBack }) {
     const currentCount = settings.scrollCards.length;
     
     if (count > currentCount) {
-      // Add new cards
+      // Add new custom cards
       const newCards = [...settings.scrollCards];
       for (let i = currentCount; i < count; i++) {
         newCards.push({
@@ -232,16 +285,20 @@ function SettingsDashboard({ onSave, onBack }) {
           label: `Card ${i + 1}`,
           emoji: '😊',
           speakText: `Card ${i + 1}`,
+          isPreset: false,
           imageId: null
         });
       }
       setSettings(prev => ({ ...prev, scrollCards: newCards }));
     } else if (count < currentCount) {
-      // Remove cards (save to removed)
+      // Remove cards - only save custom cards to removed list
       const removingCards = settings.scrollCards.slice(count);
-      const updatedRemovedCards = [...removedCards, ...removingCards];
-      setRemovedCards(updatedRemovedCards);
-      saveRemovedCards(updatedRemovedCards);
+      const customCardsToRemove = removingCards.filter(card => !card.isPreset);
+      if (customCardsToRemove.length > 0) {
+        const updatedRemovedCards = [...removedCards, ...customCardsToRemove].slice(-MAX_REMOVED_CARDS);
+        setRemovedCards(updatedRemovedCards);
+        saveRemovedCards(updatedRemovedCards);
+      }
       
       const newCards = settings.scrollCards.slice(0, count);
       setSettings(prev => ({ ...prev, scrollCards: newCards }));
@@ -452,10 +509,51 @@ function SettingsDashboard({ onSave, onBack }) {
                   onClick={addCard}
                   className="px-3 py-1 bg-green-600 rounded hover:bg-green-500 text-sm"
                 >
-                  + Add Card
+                  + Add Custom Card
                 </button>
               )}
             </div>
+
+            {/* Preset Cards Dropdown */}
+            {getAvailablePresetCards().length > 0 && settings.scrollCards.length < 10 && (
+              <div className="mb-4">
+                <button
+                  onClick={() => setShowPresetCards(!showPresetCards)}
+                  className="flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-2 font-medium"
+                >
+                  <span>{showPresetCards ? '▼' : '▶'}</span>
+                  <span>Preset Cards ({getAvailablePresetCards().length} available)</span>
+                </button>
+                
+                {showPresetCards && (
+                  <div className="space-y-2 ml-4 bg-gray-700/50 rounded-lg p-3">
+                    {getAvailablePresetCards().map((card) => (
+                      <div 
+                        key={card.id}
+                        className="flex items-center justify-between p-2 bg-gray-700 rounded hover:bg-gray-600 transition-colors"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl">{card.emoji}</span>
+                          <span className="text-gray-200">{card.label}</span>
+                          {card.isInteractive && (
+                            <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full">
+                              (Interactive!)
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          onClick={() => addPresetCard(card)}
+                          disabled={settings.scrollCards.length >= 10}
+                          className="px-3 py-1 bg-blue-600 rounded text-sm hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          + Add
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
             <div className="space-y-3">
               {settings.scrollCards.map((card, idx) => (
@@ -474,36 +572,45 @@ function SettingsDashboard({ onSave, onBack }) {
               ))}
             </div>
 
-            {/* Re-add removed cards section */}
-            {removedCards.length > 0 && (
+            {/* Re-add removed custom cards section (only for custom cards, not presets) */}
+            {getRemovedCustomCards().length > 0 && (
               <div className="mt-6">
                 <button
                   onClick={() => setShowRemovedCards(!showRemovedCards)}
                   className="flex items-center gap-2 text-gray-400 hover:text-white mb-2"
                 >
                   <span>{showRemovedCards ? '▼' : '▶'}</span>
-                  <span>Previously Removed ({removedCards.length})</span>
+                  <span>Previously Removed ({getRemovedCustomCards().length})</span>
                 </button>
                 
                 {showRemovedCards && (
                   <div className="space-y-2 ml-4">
-                    {removedCards.map((card, idx) => (
+                    {getRemovedCustomCards().map((card) => (
                       <div 
-                        key={`removed-${idx}`}
+                        key={`removed-${card.id}`}
                         className="flex items-center justify-between p-2 bg-gray-700 rounded"
                       >
                         <div className="flex items-center gap-2">
                           <span className="text-xl">{card.emoji}</span>
                           <span className="text-gray-300">{card.label}</span>
                         </div>
-                        {settings.scrollCards.length < 10 && (
+                        <div className="flex items-center gap-2">
+                          {settings.scrollCards.length < 10 && (
+                            <button
+                              onClick={() => reAddCard(card.id)}
+                              className="px-2 py-1 bg-blue-600 rounded text-sm hover:bg-blue-500"
+                            >
+                              Re-add
+                            </button>
+                          )}
                           <button
-                            onClick={() => reAddCard(idx)}
-                            className="px-2 py-1 bg-blue-600 rounded text-sm hover:bg-blue-500"
+                            onClick={() => permanentlyDeleteRemovedCard(card.id)}
+                            className="w-6 h-6 rounded-full bg-red-600/50 hover:bg-red-600 flex items-center justify-center text-sm"
+                            title="Permanently delete"
                           >
-                            Re-add
+                            ✕
                           </button>
-                        )}
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -635,7 +742,14 @@ function CardEditor({ card, index, color, imageUrl, isEditing, onUpload, onEditL
         className={`flex-1 px-3 py-2 rounded text-left hover:bg-white/10 ${isEditing ? 'bg-blue-600/50' : ''}`}
         title="Tap to edit label"
       >
-        <div className="font-medium">{card.label}</div>
+        <div className="font-medium flex items-center gap-2">
+          {card.label}
+          {card.isInteractive && (
+            <span className="text-xs bg-purple-600 text-white px-2 py-0.5 rounded-full">
+              (Interactive!)
+            </span>
+          )}
+        </div>
         <div className="text-xs text-gray-400">{card.speakText}</div>
       </button>
       
