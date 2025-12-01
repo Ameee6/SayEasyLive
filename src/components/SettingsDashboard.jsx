@@ -347,12 +347,11 @@ function SettingsDashboard({ onSave, onBack }) {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col scrollable-page">
-      {/* Hidden file input */}
+      {/* Hidden file input - no capture attribute to allow both gallery and camera on mobile */}
       <input
         ref={fileInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
         className="hidden"
         onChange={handleFileSelect}
       />
@@ -524,6 +523,11 @@ function SettingsDashboard({ onSave, onBack }) {
                 </button>
               )}
             </div>
+
+            {/* Image upload hint for mobile users */}
+            <p className="text-sm text-gray-400 mb-4">
+              📷 Tap any card image to upload. You can use a photo from your gallery or take a new picture.
+            </p>
 
             {/* Preset Cards Dropdown */}
             {getAvailablePresetCards().length > 0 && settings.scrollCards.length < 10 && (
