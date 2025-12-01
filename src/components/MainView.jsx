@@ -460,11 +460,11 @@ function MainView({ cards, leftButtons = defaultLeftButtons, voicePreference, on
                   )}
                 </button>
 
-                {/* Title/Label - much larger text */}
+                {/* Title/Label - reduced by 50% for better fit with long words */}
                 <div 
                   className="font-bold text-center px-4 my-6"
                   style={{ 
-                    fontSize: 'clamp(48px, 14vw, 160px)',
+                    fontSize: 'clamp(24px, 7vw, 80px)',
                     ...LABEL_STYLE
                   }}
                 >
