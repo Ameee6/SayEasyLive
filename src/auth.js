@@ -15,16 +15,19 @@ import {
   getDoc,
   serverTimestamp,
 } from "firebase/firestore";
+import { TIERS } from "./tierManager";
 
 const provider = new GoogleAuthProvider();
 
 export async function signUp(email, password, fullName = "") {
   const cred = await createUserWithEmailAndPassword(auth, email, password);
   const user = cred.user;
-  // create profile doc
+  // create profile doc with default free tier
   await setDoc(doc(db, "users", user.uid), {
     fullName,
     email: user.email,
+    tier: TIERS.FREE,
+    grantedByAdmin: false,
     createdAt: serverTimestamp(),
   });
   return user;
@@ -46,6 +49,8 @@ export async function signInWithGoogle() {
       fullName: user.displayName || "",
       email: user.email,
       avatarUrl: user.photoURL || "",
+      tier: TIERS.FREE,
+      grantedByAdmin: false,
       createdAt: serverTimestamp(),
     });
   }
