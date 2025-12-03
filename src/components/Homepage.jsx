@@ -1,6 +1,7 @@
 import { useRef, useEffect } from 'react';
+import AuthButton from './AuthButton';
 
-function Homepage({ onNavigateToSettings, onNavigateToMain }) {
+function Homepage({ onNavigateToSettings, onNavigateToMain, user, userProfile, userTier }) {
   const highlightTimeoutRef = useRef(null);
 
   useEffect(() => {
@@ -269,23 +270,20 @@ function Homepage({ onNavigateToSettings, onNavigateToMain }) {
             <span className="mx-2">•</span>
             <span>Simple, Stable Communication</span>
           </div>
-          <div className="flex gap-6 text-gray-400">
+          <div className="flex gap-6 items-center">
             <a 
               href="https://ajamcodes.netlify.app" 
               target="_blank" 
               rel="noopener noreferrer"
-              className="hover:text-white transition-colors"
+              className="text-gray-400 hover:text-white transition-colors"
             >
               Contact
             </a>
-            <button
-              className="text-gray-500 text-sm cursor-default"
-              title="Account management coming soon"
-              aria-label="Manage Account - Account management coming soon"
-              disabled
-            >
-              Manage Account
-            </button>
+            <AuthButton 
+              user={user}
+              userProfile={userProfile}
+              userTier={userTier}
+            />
           </div>
         </div>
       </footer>

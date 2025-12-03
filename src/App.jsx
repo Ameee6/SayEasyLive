@@ -5,15 +5,41 @@ import DrumsView from './components/DrumsView';
 import SettingsDashboard from './components/SettingsDashboard';
 import { initSpeech } from './utils/speech';
 import { loadDashboardSettings, saveDashboardSettings } from './utils/storage';
+import { onAuthChange, getProfile } from './auth';
+import { getUserTier } from './tierManager';
 
 function App() {
   const [currentView, setCurrentView] = useState('home'); // 'home', 'main', 'drums', or 'settings'
   const [dashboardSettings, setDashboardSettings] = useState(loadDashboardSettings());
   const [highlightedCardIndex, setHighlightedCardIndex] = useState(null); // Track which card to highlight when returning to main view
+  const [user, setUser] = useState(null);
+  const [userProfile, setUserProfile] = useState(null);
+  const [userTier, setUserTier] = useState(null);
 
   // Initialize speech synthesis on mount
   useEffect(() => {
     initSpeech();
+  }, []);
+
+  // Listen for authentication state changes
+  useEffect(() => {
+    const unsubscribe = onAuthChange(async (firebaseUser) => {
+      setUser(firebaseUser);
+      if (firebaseUser) {
+        try {
+          const profile = await getProfile(firebaseUser.uid);
+          setUserProfile(profile);
+          setUserTier(getUserTier(profile));
+        } catch (error) {
+          console.error('Error fetching user profile:', error);
+        }
+      } else {
+        setUserProfile(null);
+        setUserTier(null);
+      }
+    });
+
+    return () => unsubscribe();
   }, []);
 
   // Convert dashboard settings to format expected by MainView
@@ -73,6 +99,9 @@ function App() {
       <Homepage
         onNavigateToSettings={handleNavigateToSettings}
         onNavigateToMain={handleNavigateToMain}
+        user={user}
+        userProfile={userProfile}
+        userTier={userTier}
       />
     );
   }
