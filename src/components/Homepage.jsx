@@ -1,7 +1,7 @@
 import { useRef, useEffect } from 'react';
 import AuthButton from './AuthButton';
 
-function Homepage({ onNavigateToSettings, onNavigateToMain, user, userProfile, userTier }) {
+function Homepage({ onNavigateToSettings, onNavigateToMain, user, userProfile, userTier, onRefreshUser }) {
   const highlightTimeoutRef = useRef(null);
 
   useEffect(() => {
@@ -283,6 +283,7 @@ function Homepage({ onNavigateToSettings, onNavigateToMain, user, userProfile, u
               user={user}
               userProfile={userProfile}
               userTier={userTier}
+              onRefreshUser={onRefreshUser}
             />
           </div>
         </div>

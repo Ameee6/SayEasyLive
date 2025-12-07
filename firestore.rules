@@ -1,60 +1,33 @@
 rules_version = '2';
+
 service cloud.firestore {
   match /databases/{database}/documents {
-
-    // Helper function to get custom button limit based on tier
-    function getCustomButtonLimit(tier) {
-      return tier == 'founding' ? 10 :
-             tier == 'premium' ? 10 :
-             2; // default for 'free' tier
-    }
-
-    // Helper function to validate custom cards count
-    function validateCustomCardsLimit(userId, customCards) {
-      let userDoc = get(/databases/$(database)/documents/users/$(userId));
-      let tier = userDoc.data.tier;
-      let limit = getCustomButtonLimit(tier);
-      let count = customCards != null ? customCards.size() : 0;
-      return count <= limit;
-    }
-
+    // Users can read/write their own profile and settings
+    // Admins can read all user profiles
     match /users/{userId} {
-      // Users can create their own profile (done during signup)
-      allow create: if request.auth != null && request.auth.uid == userId;
-
-      // Users can read and update their own profile
-      // BUT they cannot change their own tier (only admins/functions can)
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && isAdmin();
+      allow write: if request.auth != null && isAdmin();
+    }
+    
+    // User settings - basic auth check (tier validation moved to app level)
+    match /user_settings/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null && isAdmin();
+    }
+    
+    // Subscriptions are read-only for users (written by Cloud Functions)
+    match /subscriptions/{userId} {
       allow read: if request.auth != null && request.auth.uid == userId;
-      allow update: if request.auth != null
-                    && request.auth.uid == userId
-                    && request.resource.data.tier == resource.data.tier
-                    && request.resource.data.grantedByAdmin == resource.data.grantedByAdmin;
-
-      allow delete: if request.auth != null && request.auth.uid == userId;
-    }
-
-    match /user_settings/{settingId} {
-      // Users can create settings if they own them
-      allow create: if request.auth != null
-                    && request.resource.data.userId == request.auth.uid
-                    && validateCustomCardsLimit(request.auth.uid, request.resource.data.customCards);
-
-      // Users can read their own settings
-      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
-
-      // Users can update their settings if they respect tier limits
-      allow update: if request.auth != null
-                    && resource.data.userId == request.auth.uid
-                    && request.resource.data.userId == request.auth.uid
-                    && validateCustomCardsLimit(request.auth.uid, request.resource.data.customCards);
-
-      allow delete: if request.auth != null && resource.data.userId == request.auth.uid;
-    }
-
-    match /subscriptions/{subId} {
-      allow read: if request.auth != null && resource.data.userId == request.auth.uid;
-      // Only Cloud Functions can write subscriptions
-      allow write: if false;
+      allow read: if request.auth != null && isAdmin();
+      allow write: if false; // Only Cloud Functions can write
     }
   }
+  
+  // Helper function to check if user is admin
+  function isAdmin() {
+    return request.auth.token.email == 'amyerdt6@gmail.com';
+  }
+  
+  // Tier validation is now handled at the app level in settingsStorage.js
 }

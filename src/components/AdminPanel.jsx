@@ -11,7 +11,7 @@ export default function AdminPanel({ userProfile, onClose }) {
   const [recentUsers, setRecentUsers] = useState([]);
 
   // Check if current user is admin (you)
-  const isAdmin = userProfile?.email === 'amyerdt6@gmail.com';
+  const isAdmin = userProfile?.email === 'amyerdt6@gmail.com' || userProfile?.tier === 'admin';
 
   if (!isAdmin) {
     return null;

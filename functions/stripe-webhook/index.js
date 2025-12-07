@@ -1,13 +1,19 @@
 // functions/stripe-webhook/index.js
-const functions = require('firebase-functions');
+const {onRequest} = require('firebase-functions/v2/https');
 const admin = require('firebase-admin');
 const Stripe = require('stripe');
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2022-11-15' });
 
-admin.initializeApp();
+// Initialize admin only if not already initialized
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
 const db = admin.firestore();
 
-exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
+exports.stripeWebhook = onRequest({
+  cors: true,  // Webhooks from Stripe need open CORS
+  invoker: 'public'
+}, async (req, res) => {
   const sig = req.headers['stripe-signature'];
   let event;
 
@@ -39,6 +45,14 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
           rawEvent: event,
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         }, { merge: true });
+
+        // Update user tier to premium when subscription is active
+        if (subscription.status === 'active') {
+          await db.collection('users').doc(uid).update({
+            tier: 'premium',
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        }
       }
     }
 
@@ -61,6 +75,14 @@ exports.stripeWebhook = functions.https.onRequest(async (req, res) => {
           rawEvent: event,
           updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         }, { merge: true });
+
+        // Update user tier to premium when subscription is active
+        if (subscription.status === 'active') {
+          await db.collection('users').doc(uid).update({
+            tier: 'premium',
+            updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+          });
+        }
       }
     }
 

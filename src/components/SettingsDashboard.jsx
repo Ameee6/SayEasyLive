@@ -1,8 +1,11 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { loadDashboardSettings, saveDashboardSettings, loadRemovedCards, saveRemovedCards } from '../utils/storage';
+import { saveSettings, loadSettings } from '../settingsStorage';
 import { saveImage, loadAllImages, fileToDataUrl, resizeImage } from '../utils/imageStorage';
 import { presetCards } from '../data/defaultCards';
+import { canAddCustomScrollCard } from '../tierManager';
+import TrialSignupModal from './TrialSignupModal';
 
 /*
  * FUTURE ENHANCEMENT (Next Phase):
@@ -43,8 +46,9 @@ const MAIN_BUTTON_IDS = ['main-top', 'main-bottom'];
 // Helper function to check if a card ID belongs to a card (custom or preset)
 const isCardId = (id) => id.startsWith(CARD_ID_PREFIX) || id.startsWith(PRESET_ID_PREFIX);
 
-function SettingsDashboard({ onSave, onBack }) {
+function SettingsDashboard({ onSave, onBack, userProfile, userTier }) {
   const [settings, setSettings] = useState(loadDashboardSettings());
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [images, setImages] = useState({});
   const [removedCards, setRemovedCards] = useState(loadRemovedCards());
   const [editingItem, setEditingItem] = useState(null); // { type: 'main-top'|'main-bottom'|'card', index?: number }
@@ -53,6 +57,7 @@ function SettingsDashboard({ onSave, onBack }) {
   const [showPresetCards, setShowPresetCards] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [isPortrait, setIsPortrait] = useState(false);
+  const [showTrialModal, setShowTrialModal] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState(null);
   
   const fileInputRef = useRef(null);
@@ -67,6 +72,37 @@ function SettingsDashboard({ onSave, onBack }) {
     window.addEventListener('resize', checkPortrait);
     return () => window.removeEventListener('resize', checkPortrait);
   }, []);
+
+  // Load settings from Firestore if user is logged in
+  useEffect(() => {
+    const loadUserSettings = async () => {
+      if (userProfile && !settingsLoaded) {
+        try {
+          console.log('🔍 Loading Firestore settings for user:', userProfile.email);
+          const firestoreSettings = await loadSettings();
+          console.log('📥 Firestore settings loaded:', firestoreSettings);
+          
+          if (firestoreSettings && firestoreSettings.scrollCards) {
+            console.log('✅ Using Firestore settings');
+            setSettings(firestoreSettings);
+          } else {
+            console.log('⚠️ No Firestore settings found, using localStorage');
+          }
+        } catch (error) {
+          console.error('❌ Error loading Firestore settings:', error);
+          // Fall back to localStorage settings (already loaded)
+        } finally {
+          setSettingsLoaded(true);
+        }
+      } else if (!userProfile) {
+        // Not logged in, use localStorage settings (already loaded)
+        console.log('👤 Not logged in, using localStorage settings');
+        setSettingsLoaded(true);
+      }
+    };
+    
+    loadUserSettings();
+  }, [userProfile, settingsLoaded]);
 
   // Load all images on mount
   useEffect(() => {
@@ -225,6 +261,25 @@ function SettingsDashboard({ onSave, onBack }) {
   const addCard = () => {
     if (settings.scrollCards.length >= 10) return;
     
+    // Check tier limits for custom scroll cards
+    const currentCustomScrollCards = settings.scrollCards.filter(card => !card.isPreset);
+    if (!canAddCustomScrollCard(userProfile, currentCustomScrollCards.length)) {
+      // Show upgrade prompt for free users
+      const tierName = userTier?.displayName || 'Free';
+      const maxAllowed = userTier?.customScrollCardLimit || 0;
+      
+      console.log('🔍 Debug: maxAllowed =', maxAllowed, 'tierName =', tierName, 'userTier =', userTier);
+      
+      if (maxAllowed === 0) {
+        console.log('✅ Showing TrialSignupModal for free user');
+        setShowTrialModal(true);
+      } else {
+        console.log('⚠️ Showing alert for user with limit:', maxAllowed);
+        alert(`${tierName} tier allows ${maxAllowed} custom scroll cards. You're currently using ${currentCustomScrollCards.length}/${maxAllowed}.`);
+      }
+      return;
+    }
+    
     const newId = generateUniqueId();
     const newCard = {
       id: newId,
@@ -374,7 +429,28 @@ function SettingsDashboard({ onSave, onBack }) {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      saveDashboardSettings(settings);
+      if (userProfile) {
+        // User is logged in - save to Firestore
+        // Transform data format for settingsStorage (expects customCards, not scrollCards)
+        const firestoreSettings = {
+          ...settings,
+          customCards: settings.scrollCards?.filter(card => !card.isPreset) || [],
+          scrollCards: settings.scrollCards // Keep original for compatibility
+        };
+        
+        console.log('💾 Saving settings to Firestore:', firestoreSettings);
+        const result = await saveSettings(firestoreSettings);
+        if (!result.success) {
+          console.error('❌ Error saving to Firestore:', result.error);
+          // Fall back to localStorage
+          saveDashboardSettings(settings);
+        } else {
+          console.log('✅ Successfully saved to Firestore');
+        }
+      } else {
+        // User is not logged in - save to localStorage
+        saveDashboardSettings(settings);
+      }
       onSave(settings);
     } finally {
       setIsSaving(false);
@@ -616,7 +692,10 @@ function SettingsDashboard({ onSave, onBack }) {
                   onClick={addCard}
                   className="px-3 py-1 bg-green-600 rounded hover:bg-green-500 text-sm"
                 >
-                  + Add Custom Card
+                  {userTier?.tier === 'free' 
+                    ? `+ Add Custom Scroll Card (${settings.scrollCards.filter(c => !c.isPreset).length}/${userTier.customScrollCardLimit || 0} allowed)` 
+                    : `+ Add Custom Scroll Card (${settings.scrollCards.filter(c => !c.isPreset).length}/10)`
+                  }
                 </button>
               )}
             </div>
@@ -779,6 +858,23 @@ function SettingsDashboard({ onSave, onBack }) {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Trial Signup Modal */}
+      {showTrialModal && (
+        <TrialSignupModal 
+          onClose={() => setShowTrialModal(false)}
+          onSignIn={() => {
+            setShowTrialModal(false);
+            // Navigate back to homepage where user can sign in
+            onBack();
+          }}
+          onSignUp={() => {
+            setShowTrialModal(false);
+            // Navigate back to homepage where user can create account
+            onBack();
+          }}
+        />
       )}
     </div>
   );

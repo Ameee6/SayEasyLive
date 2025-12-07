@@ -58,18 +58,18 @@ export const presetCards = [
     imageId: null
   },
   {
-    id: 'preset-eat',
-    label: 'Eat',
+    id: 'preset-eat-drink',
+    label: 'Eat/Drink',
     emoji: '🍽️',
-    speakText: 'Eat',
+    speakText: 'Eat, Drink',
     isPreset: true,
     imageId: null
   },
   {
-    id: 'preset-drink',
-    label: 'Drink',
-    emoji: '🥤',
-    speakText: 'Drink',
+    id: 'preset-hurt',
+    label: 'Hurt/Pain',
+    emoji: '🤕',
+    speakText: 'Hurt, Pain',
     isPreset: true,
     imageId: null
   },

@@ -7,19 +7,38 @@ import { initSpeech } from './utils/speech';
 import { loadDashboardSettings, saveDashboardSettings } from './utils/storage';
 import { onAuthChange, getProfile } from './auth';
 import { getUserTier } from './tierManager';
+import { useSettingsListener } from './hooks/useSettingsListener';
 
 function App() {
   const [currentView, setCurrentView] = useState('home'); // 'home', 'main', 'drums', or 'settings'
-  const [dashboardSettings, setDashboardSettings] = useState(loadDashboardSettings());
   const [highlightedCardIndex, setHighlightedCardIndex] = useState(null); // Track which card to highlight when returning to main view
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [userTier, setUserTier] = useState(null);
 
+  // Use real-time settings listener for live sync
+  const { settings: realtimeSettings, loading: settingsLoading } = useSettingsListener();
+  
+  // Fall back to default settings if real-time settings aren't loaded yet
+  const dashboardSettings = realtimeSettings || loadDashboardSettings();
+
   // Initialize speech synthesis on mount
   useEffect(() => {
     initSpeech();
   }, []);
+
+  // Refresh user profile data
+  const refreshUserProfile = async () => {
+    if (user) {
+      try {
+        const profile = await getProfile(user.uid);
+        setUserProfile(profile);
+        setUserTier(getUserTier(profile));
+      } catch (error) {
+        console.error('Error refreshing user profile:', error);
+      }
+    }
+  };
 
   // Listen for authentication state changes
   useEffect(() => {
@@ -58,9 +77,11 @@ function App() {
 
   // Handle saving settings from dashboard
   const handleSaveSettings = (newSettings) => {
-    setDashboardSettings(newSettings);
+    // Save to localStorage as backup
     saveDashboardSettings(newSettings);
     setCurrentView('main');
+    // Note: Real-time settings will be updated automatically via the useSettingsListener hook
+    // when the SettingsDashboard saves to Firestore
   };
 
   // Handle going back from settings to homepage
@@ -93,6 +114,18 @@ function App() {
     setCurrentView('main');
   };
 
+  // Show loading screen if settings are still loading
+  if (settingsLoading) {
+    return (
+      <div className="w-screen h-screen flex items-center justify-center bg-white">
+        <div className="text-center">
+          <div className="text-2xl font-bold text-gray-700 mb-2">Loading...</div>
+          <div className="text-gray-500">Syncing your settings</div>
+        </div>
+      </div>
+    );
+  }
+
   // Render appropriate view
   if (currentView === 'home') {
     return (
@@ -102,6 +135,7 @@ function App() {
         user={user}
         userProfile={userProfile}
         userTier={userTier}
+        onRefreshUser={refreshUserProfile}
       />
     );
   }
@@ -111,6 +145,8 @@ function App() {
       <SettingsDashboard
         onSave={handleSaveSettings}
         onBack={handleBackToHome}
+        userProfile={userProfile}
+        userTier={userTier}
       />
     );
   }

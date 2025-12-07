@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { signUp, signInWithPassword, signInWithGoogle, signOut } from '../auth';
 import AdminPanel from './AdminPanel';
+import UserDashboard from './UserDashboard';
 
-export default function AuthButton({ user, userProfile, userTier }) {
+export default function AuthButton({ user, userProfile, userTier, onRefreshUser }) {
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [authMode, setAuthMode] = useState('signin'); // 'signin' or 'signup'
   const [email, setEmail] = useState('');
@@ -11,8 +12,9 @@ export default function AuthButton({ user, userProfile, userTier }) {
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
   const [showAdminPanel, setShowAdminPanel] = useState(false);
+  const [showUserDashboard, setShowUserDashboard] = useState(false);
 
-  const isAdmin = userProfile?.email === 'amyerdt6@gmail.com';
+  const isAdmin = userProfile?.email === 'amyerdt6@gmail.com' || userProfile?.tier === 'admin';
 
   async function handleSignUp(e) {
     e.preventDefault();
@@ -123,6 +125,12 @@ export default function AuthButton({ user, userProfile, userTier }) {
               </button>
             )}
             <button
+              onClick={() => setShowUserDashboard(true)}
+              className="text-blue-400 hover:text-blue-300 transition-colors"
+            >
+              Account
+            </button>
+            <button
               onClick={handleSignOut}
               disabled={loading}
               className="text-gray-400 hover:text-white transition-colors disabled:opacity-50"
@@ -136,6 +144,21 @@ export default function AuthButton({ user, userProfile, userTier }) {
           <AdminPanel 
             userProfile={userProfile}
             onClose={() => setShowAdminPanel(false)}
+          />
+        )}
+
+        {showUserDashboard && (
+          <UserDashboard 
+            user={user}
+            userProfile={userProfile}
+            userTier={userTier}
+            onClose={() => setShowUserDashboard(false)}
+            onStartTrial={async () => {
+              // Refresh user data after trial starts
+              if (onRefreshUser) {
+                await onRefreshUser();
+              }
+            }}
           />
         )}
       </>

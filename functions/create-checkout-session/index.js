@@ -1,14 +1,30 @@
 // functions/create-checkout-session/index.js
-const functions = require('firebase-functions');
+const {onRequest} = require('firebase-functions/v2/https');
 const admin = require('firebase-admin');
 const Stripe = require('stripe');
 
-admin.initializeApp();
+// Initialize admin only if not already initialized
+if (!admin.apps.length) {
+  admin.initializeApp();
+}
 const db = admin.firestore();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2022-11-15' });
 
-// HTTP function
-exports.createCheckoutSession = functions.https.onRequest(async (req, res) => {
+// HTTP function  
+exports.createCheckoutSession = onRequest({
+  invoker: 'public'
+}, async (req, res) => {
+  // Temporary wildcard CORS for testing - we'll tighten this later
+  res.set('Access-Control-Allow-Origin', '*');
+  res.set('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.set('Access-Control-Max-Age', '3600');
+
+  // Handle preflight requests
+  if (req.method === 'OPTIONS') {
+    return res.status(204).send('');
+  }
+
   try {
     if (req.method !== 'POST') return res.status(405).send('Method Not Allowed');
 
