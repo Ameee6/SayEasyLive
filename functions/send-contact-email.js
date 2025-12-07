@@ -26,20 +26,17 @@ exports.sendContactEmail = onRequest({ cors: true }, async (req, res) => {
     }
 
     // Configure nodemailer transporter
-    // For production, you'll need to configure this with your actual email service
-    // This is a basic example that would need proper SMTP configuration
-    const transporter = nodemailer.createTransporter({
-      // This is a placeholder - you'll need to configure actual email service
+    const transporter = nodemailer.createTransport({
       service: 'gmail', 
       auth: {
-        user: process.env.EMAIL_USER, // Set in Firebase Functions config
-        pass: process.env.EMAIL_PASS  // Set in Firebase Functions config
+        user: 'sayeasyteam@gmail.com',
+        pass: 'zocn bvrc upns tmpv'
       }
     });
 
     // Email content
     const mailOptions = {
-      from: process.env.EMAIL_USER,
+      from: 'sayeasyteam@gmail.com',
       to: 'sayeasyteam@gmail.com',
       subject: `SayEasy Contact Form: ${subject}`,
       html: `
