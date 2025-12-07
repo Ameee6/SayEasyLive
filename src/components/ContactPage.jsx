@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 function ContactPage({ onBack }) {
   const [formData, setFormData] = useState({
@@ -9,6 +9,11 @@ function ContactPage({ onBack }) {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState('');
+
+  // Scroll to top when component mounts
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -49,7 +54,7 @@ function ContactPage({ onBack }) {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white flex flex-col scrollable-page">
       {/* Header with Back Button */}
       <header className="bg-gradient-to-r from-purple-700 via-blue-600 to-purple-700 py-6 px-6 shadow-lg">
         <div className="max-w-6xl mx-auto flex items-center">
@@ -72,7 +77,7 @@ function ContactPage({ onBack }) {
       </header>
 
       {/* Main Content */}
-      <main className="px-4 md:px-8 py-8">
+      <main className="flex-1 px-4 md:px-8 py-8">
         <div className="max-w-4xl mx-auto">
           
           {/* About Section */}
