@@ -1,7 +1,7 @@
 import { useRef, useEffect } from 'react';
 import AuthButton from './AuthButton';
 
-function Homepage({ onNavigateToSettings, onNavigateToMain, user, userProfile, userTier, onRefreshUser, showSignupModal, onCloseSignupModal }) {
+function Homepage({ onNavigateToSettings, onNavigateToMain, onNavigateToContact, user, userProfile, userTier, onRefreshUser, showSignupModal, onCloseSignupModal }) {
   const highlightTimeoutRef = useRef(null);
 
   useEffect(() => {
@@ -271,14 +271,12 @@ function Homepage({ onNavigateToSettings, onNavigateToMain, user, userProfile, u
             <span>Simple, Stable Communication</span>
           </div>
           <div className="flex gap-6 items-center">
-            <a 
-              href="https://ajamcodes.netlify.app" 
-              target="_blank" 
-              rel="noopener noreferrer"
+            <button
+              onClick={onNavigateToContact}
               className="text-gray-400 hover:text-white transition-colors"
             >
-              Contact
-            </a>
+              Have feedback or questions? Contact us here
+            </button>
             <AuthButton 
               user={user}
               userProfile={userProfile}

@@ -3,6 +3,7 @@ import Homepage from './components/Homepage';
 import MainView from './components/MainView';
 import DrumsView from './components/DrumsView';
 import SettingsDashboard from './components/SettingsDashboard';
+import ContactPage from './components/ContactPage';
 import { initSpeech } from './utils/speech';
 import { loadDashboardSettings, saveDashboardSettings } from './utils/storage';
 import { onAuthChange, getProfile } from './auth';
@@ -10,7 +11,7 @@ import { getUserTier } from './tierManager';
 import { useSettingsListener } from './hooks/useSettingsListener';
 
 function App() {
-  const [currentView, setCurrentView] = useState('home'); // 'home', 'main', 'drums', or 'settings'
+  const [currentView, setCurrentView] = useState('home'); // 'home', 'main', 'drums', 'settings', or 'contact'
   const [highlightedCardIndex, setHighlightedCardIndex] = useState(null); // Track which card to highlight when returning to main view
   const [showSignupModal, setShowSignupModal] = useState(false); // Control signup modal from settings
   const [user, setUser] = useState(null);
@@ -107,6 +108,11 @@ function App() {
     setCurrentView('main');
   };
 
+  // Handle navigation to contact page
+  const handleNavigateToContact = () => {
+    setCurrentView('contact');
+  };
+
   // Handle navigation to Drums view
   const handlePlayDrums = () => {
     setCurrentView('drums');
@@ -139,6 +145,7 @@ function App() {
       <Homepage
         onNavigateToSettings={handleNavigateToSettings}
         onNavigateToMain={handleNavigateToMain}
+        onNavigateToContact={handleNavigateToContact}
         user={user}
         userProfile={userProfile}
         userTier={userTier}
@@ -157,6 +164,14 @@ function App() {
         onShowSignup={handleShowSignup}
         userProfile={userProfile}
         userTier={userTier}
+      />
+    );
+  }
+
+  if (currentView === 'contact') {
+    return (
+      <ContactPage
+        onBack={handleBackToHome}
       />
     );
   }

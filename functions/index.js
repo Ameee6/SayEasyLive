@@ -26,6 +26,8 @@ setGlobalOptions({ maxInstances: 10 });
 // Import and export Stripe functions
 const { createCheckoutSession } = require('./create-checkout-session');
 const { stripeWebhook } = require('./stripe-webhook');
+const { sendContactEmail } = require('./send-contact-email');
 
 exports.createCheckoutSession = createCheckoutSession;
 exports.stripeWebhook = stripeWebhook;
+exports.sendContactEmail = sendContactEmail;
