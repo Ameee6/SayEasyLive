@@ -6,6 +6,7 @@ import { saveImage, loadAllImages, fileToDataUrl, resizeImage } from '../utils/i
 import { presetCards } from '../data/defaultCards';
 import { canAddCustomScrollCard } from '../tierManager';
 import TrialSignupModal from './TrialSignupModal';
+import SaveSettingsModal from './SaveSettingsModal';
 
 /*
  * FUTURE ENHANCEMENT (Next Phase):
@@ -46,7 +47,7 @@ const MAIN_BUTTON_IDS = ['main-top', 'main-bottom'];
 // Helper function to check if a card ID belongs to a card (custom or preset)
 const isCardId = (id) => id.startsWith(CARD_ID_PREFIX) || id.startsWith(PRESET_ID_PREFIX);
 
-function SettingsDashboard({ onSave, onBack, userProfile, userTier }) {
+function SettingsDashboard({ onSave, onBack, onShowSignup, userProfile, userTier }) {
   const [settings, setSettings] = useState(loadDashboardSettings());
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [images, setImages] = useState({});
@@ -58,6 +59,7 @@ function SettingsDashboard({ onSave, onBack, userProfile, userTier }) {
   const [isSaving, setIsSaving] = useState(false);
   const [isPortrait, setIsPortrait] = useState(false);
   const [showTrialModal, setShowTrialModal] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState(null);
   
   const fileInputRef = useRef(null);
@@ -268,13 +270,9 @@ function SettingsDashboard({ onSave, onBack, userProfile, userTier }) {
       const tierName = userTier?.displayName || 'Free';
       const maxAllowed = userTier?.customScrollCardLimit || 0;
       
-      console.log('🔍 Debug: maxAllowed =', maxAllowed, 'tierName =', tierName, 'userTier =', userTier);
-      
       if (maxAllowed === 0) {
-        console.log('✅ Showing TrialSignupModal for free user');
         setShowTrialModal(true);
       } else {
-        console.log('⚠️ Showing alert for user with limit:', maxAllowed);
         alert(`${tierName} tier allows ${maxAllowed} custom scroll cards. You're currently using ${currentCustomScrollCards.length}/${maxAllowed}.`);
       }
       return;
@@ -427,30 +425,58 @@ function SettingsDashboard({ onSave, onBack, userProfile, userTier }) {
 
   // Handle save
   const handleSave = async () => {
+    if (!userProfile) {
+      // User is not logged in - show save options modal
+      setShowSaveModal(true);
+      return;
+    }
+
+    // User is logged in - proceed with normal save
     setIsSaving(true);
     try {
-      if (userProfile) {
-        // User is logged in - save to Firestore
-        // Transform data format for settingsStorage (expects customCards, not scrollCards)
-        const firestoreSettings = {
-          ...settings,
-          customCards: settings.scrollCards?.filter(card => !card.isPreset) || [],
-          scrollCards: settings.scrollCards // Keep original for compatibility
-        };
-        
-        console.log('💾 Saving settings to Firestore:', firestoreSettings);
-        const result = await saveSettings(firestoreSettings);
-        if (!result.success) {
-          console.error('❌ Error saving to Firestore:', result.error);
-          // Fall back to localStorage
-          saveDashboardSettings(settings);
-        } else {
-          console.log('✅ Successfully saved to Firestore');
-        }
-      } else {
-        // User is not logged in - save to localStorage
+      // Transform data format for settingsStorage (expects customCards, not scrollCards)
+      const firestoreSettings = {
+        ...settings,
+        customCards: settings.scrollCards?.filter(card => !card.isPreset) || [],
+        scrollCards: settings.scrollCards // Keep original for compatibility
+      };
+      
+      console.log('💾 Saving settings to Firestore:', firestoreSettings);
+      const result = await saveSettings(firestoreSettings);
+      if (!result.success) {
+        console.error('❌ Error saving to Firestore:', result.error);
+        // Fall back to localStorage
         saveDashboardSettings(settings);
+      } else {
+        console.log('✅ Successfully saved to Firestore');
       }
+      onSave(settings);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle saving to account (from save modal)
+  const handleSaveToAccount = () => {
+    setShowSaveModal(false);
+    // Save temporarily to localStorage so settings persist during auth flow
+    saveDashboardSettings(settings);
+    // Show signup modal directly
+    if (onShowSignup) {
+      onShowSignup();
+    } else {
+      // Fallback: navigate to homepage
+      onBack();
+    }
+  };
+
+  // Handle staying local (from save modal)
+  const handleStayLocal = async () => {
+    setShowSaveModal(false);
+    setIsSaving(true);
+    try {
+      // Save to localStorage only
+      saveDashboardSettings(settings);
       onSave(settings);
     } finally {
       setIsSaving(false);
@@ -822,7 +848,7 @@ function SettingsDashboard({ onSave, onBack, userProfile, userTier }) {
 
       {/* Label editing modal */}
       {editingItem && (
-        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
           <div className="bg-gray-800 rounded-xl p-6 w-full max-w-md">
             <h3 className="text-xl font-bold mb-4">Edit Button</h3>
             
@@ -866,14 +892,27 @@ function SettingsDashboard({ onSave, onBack, userProfile, userTier }) {
           onClose={() => setShowTrialModal(false)}
           onSignIn={() => {
             setShowTrialModal(false);
-            // Navigate back to homepage where user can sign in
             onBack();
           }}
           onSignUp={() => {
             setShowTrialModal(false);
-            // Navigate back to homepage where user can create account
-            onBack();
+            if (onShowSignup) onShowSignup(); else onBack();
           }}
+          onStartTrial={() => {
+            setShowTrialModal(false);
+            // TODO: Start trial logic here
+            alert('Starting trial...');
+          }}
+          userProfile={userProfile}
+        />
+      )}
+
+      {/* Save Settings Modal */}
+      {showSaveModal && (
+        <SaveSettingsModal 
+          onClose={() => setShowSaveModal(false)}
+          onSaveToAccount={handleSaveToAccount}
+          onStayLocal={handleStayLocal}
         />
       )}
     </div>

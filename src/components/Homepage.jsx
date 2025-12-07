@@ -1,7 +1,7 @@
 import { useRef, useEffect } from 'react';
 import AuthButton from './AuthButton';
 
-function Homepage({ onNavigateToSettings, onNavigateToMain, user, userProfile, userTier, onRefreshUser }) {
+function Homepage({ onNavigateToSettings, onNavigateToMain, user, userProfile, userTier, onRefreshUser, showSignupModal, onCloseSignupModal }) {
   const highlightTimeoutRef = useRef(null);
 
   useEffect(() => {
@@ -284,6 +284,8 @@ function Homepage({ onNavigateToSettings, onNavigateToMain, user, userProfile, u
               userProfile={userProfile}
               userTier={userTier}
               onRefreshUser={onRefreshUser}
+              forceShowSignup={showSignupModal}
+              onModalClose={onCloseSignupModal}
             />
           </div>
         </div>

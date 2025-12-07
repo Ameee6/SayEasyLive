@@ -12,6 +12,7 @@ import { useSettingsListener } from './hooks/useSettingsListener';
 function App() {
   const [currentView, setCurrentView] = useState('home'); // 'home', 'main', 'drums', or 'settings'
   const [highlightedCardIndex, setHighlightedCardIndex] = useState(null); // Track which card to highlight when returning to main view
+  const [showSignupModal, setShowSignupModal] = useState(false); // Control signup modal from settings
   const [user, setUser] = useState(null);
   const [userProfile, setUserProfile] = useState(null);
   const [userTier, setUserTier] = useState(null);
@@ -89,6 +90,12 @@ function App() {
     setCurrentView('home');
   };
 
+  // Handle showing signup modal from settings
+  const handleShowSignup = () => {
+    setCurrentView('home');
+    setShowSignupModal(true);
+  };
+
   // Handle navigation from homepage to settings
   const handleNavigateToSettings = () => {
     setCurrentView('settings');
@@ -136,6 +143,8 @@ function App() {
         userProfile={userProfile}
         userTier={userTier}
         onRefreshUser={refreshUserProfile}
+        showSignupModal={showSignupModal}
+        onCloseSignupModal={() => setShowSignupModal(false)}
       />
     );
   }
@@ -145,6 +154,7 @@ function App() {
       <SettingsDashboard
         onSave={handleSaveSettings}
         onBack={handleBackToHome}
+        onShowSignup={handleShowSignup}
         userProfile={userProfile}
         userTier={userTier}
       />
