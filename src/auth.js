@@ -8,11 +8,13 @@ import {
   GoogleAuthProvider,
   signOut as firebaseSignOut,
   onAuthStateChanged,
+  deleteUser,
 } from "firebase/auth";
 import {
   doc,
   setDoc,
   getDoc,
+  deleteDoc,
   serverTimestamp,
 } from "firebase/firestore";
 import { TIERS } from "./tierManager";
@@ -68,4 +70,30 @@ export function onAuthChange(callback) {
 export async function getProfile(uid) {
   const snap = await getDoc(doc(db, "users", uid));
   return snap.exists() ? snap.data() : null;
+}
+
+export async function updateProfile(uid, updates) {
+  const userRef = doc(db, "users", uid);
+  await setDoc(userRef, updates, { merge: true });
+  return { success: true };
+}
+
+export async function deleteAccount() {
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('No user is currently signed in');
+  }
+
+  try {
+    // Delete user profile from Firestore
+    await deleteDoc(doc(db, "users", user.uid));
+    
+    // Delete the Firebase Auth user account
+    await deleteUser(user);
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Error deleting account:', error);
+    throw error;
+  }
 }

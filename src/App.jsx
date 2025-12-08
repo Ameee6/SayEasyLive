@@ -5,6 +5,7 @@ import DrumsView from './components/DrumsView';
 import SettingsDashboard from './components/SettingsDashboard';
 import ContactPage from './components/ContactPage';
 import AdminDashboard from './components/AdminDashboard';
+import UserAccountDashboard from './components/UserAccountDashboard';
 import { initSpeech } from './utils/speech';
 import { loadDashboardSettings, saveDashboardSettings } from './utils/storage';
 import { onAuthChange, getProfile } from './auth';
@@ -12,7 +13,7 @@ import { getUserTier } from './tierManager';
 import { useSettingsListener } from './hooks/useSettingsListener';
 
 function App() {
-  const [currentView, setCurrentView] = useState('home'); // 'home', 'main', 'drums', 'settings', 'contact', or 'admin'
+  const [currentView, setCurrentView] = useState('home'); // 'home', 'main', 'drums', 'settings', 'contact', 'admin', or 'account'
   const [highlightedCardIndex, setHighlightedCardIndex] = useState(null); // Track which card to highlight when returning to main view
   const [showSignupModal, setShowSignupModal] = useState(false); // Control signup modal from settings
   const [user, setUser] = useState(null);
@@ -119,6 +120,11 @@ function App() {
     setCurrentView('admin');
   };
 
+  // Handle navigation to user account dashboard
+  const handleNavigateToAccount = () => {
+    setCurrentView('account');
+  };
+
   // Handle navigation to Drums view
   const handlePlayDrums = () => {
     setCurrentView('drums');
@@ -153,6 +159,7 @@ function App() {
         onNavigateToMain={handleNavigateToMain}
         onNavigateToContact={handleNavigateToContact}
         onNavigateToAdmin={handleNavigateToAdmin}
+        onNavigateToAccount={handleNavigateToAccount}
         user={user}
         userProfile={userProfile}
         userTier={userTier}
@@ -188,6 +195,18 @@ function App() {
       <AdminDashboard
         onBack={handleBackToHome}
         userProfile={userProfile}
+      />
+    );
+  }
+
+  if (currentView === 'account') {
+    return (
+      <UserAccountDashboard
+        user={user}
+        userProfile={userProfile}
+        userTier={userTier}
+        onRefreshUser={refreshUserProfile}
+        onNavigateHome={handleBackToHome}
       />
     );
   }

@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import { signUp, signInWithPassword, signInWithGoogle, signOut } from '../auth';
-import AdminPanel from './AdminPanel';
-import UserDashboard from './UserDashboard';
 
 export default function AuthButton({ user, userProfile, userTier, onRefreshUser, forceShowSignup, onModalClose }) {
   const [showAuthModal, setShowAuthModal] = useState(false);
@@ -11,8 +9,6 @@ export default function AuthButton({ user, userProfile, userTier, onRefreshUser,
   const [fullName, setFullName] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
-  const [showAdminPanel, setShowAdminPanel] = useState(false);
-  const [showUserDashboard, setShowUserDashboard] = useState(false);
 
   const isAdmin = userProfile?.email === 'amyerdt6@gmail.com' || userProfile?.tier === 'admin';
 
@@ -128,20 +124,6 @@ export default function AuthButton({ user, userProfile, userTier, onRefreshUser,
             )}
           </div>
           <div className="flex gap-3 text-sm">
-            {isAdmin && (
-              <button
-                onClick={() => setShowAdminPanel(true)}
-                className="text-yellow-400 hover:text-yellow-300 transition-colors"
-              >
-                Admin
-              </button>
-            )}
-            <button
-              onClick={() => setShowUserDashboard(true)}
-              className="text-blue-400 hover:text-blue-300 transition-colors"
-            >
-              Account
-            </button>
             <button
               onClick={handleSignOut}
               disabled={loading}
@@ -152,27 +134,7 @@ export default function AuthButton({ user, userProfile, userTier, onRefreshUser,
           </div>
         </div>
 
-        {showAdminPanel && (
-          <AdminPanel 
-            userProfile={userProfile}
-            onClose={() => setShowAdminPanel(false)}
-          />
-        )}
 
-        {showUserDashboard && (
-          <UserDashboard 
-            user={user}
-            userProfile={userProfile}
-            userTier={userTier}
-            onClose={() => setShowUserDashboard(false)}
-            onStartTrial={async () => {
-              // Refresh user data after trial starts
-              if (onRefreshUser) {
-                await onRefreshUser();
-              }
-            }}
-          />
-        )}
       </>
     );
   }

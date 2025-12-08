@@ -453,6 +453,20 @@ function AdminDashboard({ onBack, userProfile }) {
           </div>
         )}
       </main>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 border-t border-gray-700 py-4 px-6 flex-shrink-0">
+        <div className="max-w-6xl mx-auto text-center">
+          <span 
+            className="font-bold text-white"
+            style={{ fontFamily: "'Quicksand', sans-serif" }}
+          >
+            SayEasy
+          </span>
+          <span className="text-gray-400 mx-2">•</span>
+          <span className="text-gray-400">Simple, Stable Communication</span>
+        </div>
+      </footer>
     </div>
   );
 }
