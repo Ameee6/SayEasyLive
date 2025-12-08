@@ -4,6 +4,7 @@ import MainView from './components/MainView';
 import DrumsView from './components/DrumsView';
 import SettingsDashboard from './components/SettingsDashboard';
 import ContactPage from './components/ContactPage';
+import AdminDashboard from './components/AdminDashboard';
 import { initSpeech } from './utils/speech';
 import { loadDashboardSettings, saveDashboardSettings } from './utils/storage';
 import { onAuthChange, getProfile } from './auth';
@@ -11,7 +12,7 @@ import { getUserTier } from './tierManager';
 import { useSettingsListener } from './hooks/useSettingsListener';
 
 function App() {
-  const [currentView, setCurrentView] = useState('home'); // 'home', 'main', 'drums', 'settings', or 'contact'
+  const [currentView, setCurrentView] = useState('home'); // 'home', 'main', 'drums', 'settings', 'contact', or 'admin'
   const [highlightedCardIndex, setHighlightedCardIndex] = useState(null); // Track which card to highlight when returning to main view
   const [showSignupModal, setShowSignupModal] = useState(false); // Control signup modal from settings
   const [user, setUser] = useState(null);
@@ -113,6 +114,11 @@ function App() {
     setCurrentView('contact');
   };
 
+  // Handle navigation to admin dashboard
+  const handleNavigateToAdmin = () => {
+    setCurrentView('admin');
+  };
+
   // Handle navigation to Drums view
   const handlePlayDrums = () => {
     setCurrentView('drums');
@@ -146,6 +152,7 @@ function App() {
         onNavigateToSettings={handleNavigateToSettings}
         onNavigateToMain={handleNavigateToMain}
         onNavigateToContact={handleNavigateToContact}
+        onNavigateToAdmin={handleNavigateToAdmin}
         user={user}
         userProfile={userProfile}
         userTier={userTier}
@@ -172,6 +179,15 @@ function App() {
     return (
       <ContactPage
         onBack={handleBackToHome}
+      />
+    );
+  }
+
+  if (currentView === 'admin') {
+    return (
+      <AdminDashboard
+        onBack={handleBackToHome}
+        userProfile={userProfile}
       />
     );
   }

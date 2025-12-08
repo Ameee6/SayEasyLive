@@ -1,7 +1,7 @@
 import { useRef, useEffect } from 'react';
 import AuthButton from './AuthButton';
 
-function Homepage({ onNavigateToSettings, onNavigateToMain, onNavigateToContact, user, userProfile, userTier, onRefreshUser, showSignupModal, onCloseSignupModal }) {
+function Homepage({ onNavigateToSettings, onNavigateToMain, onNavigateToContact, onNavigateToAdmin, user, userProfile, userTier, onRefreshUser, showSignupModal, onCloseSignupModal }) {
   const highlightTimeoutRef = useRef(null);
 
   useEffect(() => {
@@ -157,7 +157,9 @@ function Homepage({ onNavigateToSettings, onNavigateToMain, onNavigateToContact,
               Get Started
             </h3>
             
-            <div className="grid gap-6 md:grid-cols-2 max-w-3xl mx-auto">
+            <div className={`grid gap-6 max-w-3xl mx-auto ${
+              userProfile?.email === 'amyerdt6@gmail.com' ? 'md:grid-cols-3' : 'md:grid-cols-2'
+            }`}>
               {/* Settings Dashboard - Primary CTA */}
               <button
                 onClick={onNavigateToSettings}
@@ -191,6 +193,25 @@ function Homepage({ onNavigateToSettings, onNavigateToMain, onNavigateToContact,
                   Launch the main communication app
                 </span>
               </button>
+
+              {/* Admin Dashboard - Only for admin */}
+              {userProfile?.email === 'amyerdt6@gmail.com' && (
+                <button
+                  onClick={onNavigateToAdmin}
+                  className="w-full p-6 md:p-8 bg-gradient-to-r from-red-600 to-orange-500 rounded-2xl shadow-lg hover:from-red-500 hover:to-orange-400 transition-all hover:scale-105 focus:outline-none focus:ring-4 focus:ring-red-400 focus:ring-opacity-50"
+                >
+                  <span className="text-4xl mb-4 block">👑</span>
+                  <span 
+                    className="text-xl md:text-2xl font-bold text-white block"
+                    style={{ fontFamily: "'Quicksand', sans-serif" }}
+                  >
+                    Admin Dashboard
+                  </span>
+                  <span className="text-red-100 text-base mt-2 block">
+                    Manage users and monitor costs
+                  </span>
+                </button>
+              )}
             </div>
           </section>
 

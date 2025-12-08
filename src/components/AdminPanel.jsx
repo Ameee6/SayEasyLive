@@ -54,6 +54,15 @@ export default function AdminPanel({ userProfile, onClose }) {
           grantedByAdmin: newTier === TIERS.FOUNDING
         });
       }
+      
+      // Update users list if this user is in it
+      setUsers(prevUsers => 
+        prevUsers.map(user => 
+          user.id === userId 
+            ? { ...user, tier: newTier, grantedByAdmin: newTier === TIERS.FOUNDING }
+            : user
+        )
+      );
     } catch (error) {
       setMessage('Error updating user: ' + error.message);
     } finally {
@@ -123,20 +132,17 @@ export default function AdminPanel({ userProfile, onClose }) {
               <div><strong>Admin Granted:</strong> {foundUser.grantedByAdmin ? 'Yes' : 'No'}</div>
             </div>
             
-            <div className="mt-4 flex gap-2">
+            <div className="mt-4">
               <button
-                onClick={() => updateUserTier(foundUser.id, TIERS.FOUNDING)}
-                disabled={loading || foundUser.tier === TIERS.FOUNDING}
-                className="px-3 py-2 bg-yellow-600 hover:bg-yellow-500 disabled:bg-gray-600 rounded text-white text-sm"
+                onClick={() => updateUserTier(foundUser.id, foundUser.tier === TIERS.FOUNDING ? TIERS.FREE : TIERS.FOUNDING)}
+                disabled={loading}
+                className={`px-4 py-2 rounded text-sm font-medium transition-all ${
+                  foundUser.tier === TIERS.FOUNDING
+                    ? 'bg-yellow-500 text-white border-2 border-yellow-400 shadow-lg' // Founder ON
+                    : 'bg-gray-100 text-gray-700 border-2 border-gray-300 hover:bg-yellow-50 hover:border-yellow-300' // Founder OFF
+                }`}
               >
-                Make Founder ⭐
-              </button>
-              <button
-                onClick={() => updateUserTier(foundUser.id, TIERS.FREE)}
-                disabled={loading || foundUser.tier === TIERS.FREE}
-                className="px-3 py-2 bg-gray-600 hover:bg-gray-500 disabled:bg-gray-600 rounded text-white text-sm"
-              >
-                Set to Free
+                {foundUser.tier === TIERS.FOUNDING ? '⭐ Founder Status: ON' : '⭐ Grant Founder Status'}
               </button>
             </div>
           </div>
@@ -166,20 +172,17 @@ export default function AdminPanel({ userProfile, onClose }) {
                       {user.tier} {user.grantedByAdmin ? '(Admin Granted)' : ''}
                     </div>
                   </div>
-                  <div className="flex gap-1">
+                  <div>
                     <button
-                      onClick={() => updateUserTier(user.id, TIERS.FOUNDING)}
-                      disabled={loading || user.tier === TIERS.FOUNDING}
-                      className="px-2 py-1 bg-yellow-600 hover:bg-yellow-500 disabled:bg-gray-600 rounded text-white text-xs"
+                      onClick={() => updateUserTier(user.id, user.tier === TIERS.FOUNDING ? TIERS.FREE : TIERS.FOUNDING)}
+                      disabled={loading}
+                      className={`px-2 py-1 rounded text-xs font-medium transition-all ${
+                        user.tier === TIERS.FOUNDING
+                          ? 'bg-yellow-500 text-white border border-yellow-400' // Founder ON
+                          : 'bg-gray-100 text-gray-600 border border-gray-300 hover:bg-yellow-50' // Founder OFF
+                      }`}
                     >
-                      ⭐ Founder
-                    </button>
-                    <button
-                      onClick={() => updateUserTier(user.id, TIERS.FREE)}
-                      disabled={loading || user.tier === TIERS.FREE}
-                      className="px-2 py-1 bg-gray-600 hover:bg-gray-500 disabled:bg-gray-600 rounded text-white text-xs"
-                    >
-                      Free
+                      {user.tier === TIERS.FOUNDING ? '⭐ Founder' : '⭐ Make Founder'}
                     </button>
                   </div>
                 </div>
