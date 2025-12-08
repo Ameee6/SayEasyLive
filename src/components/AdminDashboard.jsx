@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { collection, getDocs, doc, updateDoc, query, orderBy, where } from 'firebase/firestore';
 import { db } from '../firebase-config';
 import { TIERS } from '../tierManager';
+import AnalyticsDashboard from './AnalyticsDashboard';
 
 function AdminDashboard({ onBack, userProfile }) {
   const [stats, setStats] = useState({
@@ -164,6 +165,7 @@ function AdminDashboard({ onBack, userProfile }) {
               { id: 'overview', name: 'Overview', icon: '📊' },
               { id: 'users', name: 'User Management', icon: '👥' },
               { id: 'analytics', name: 'Analytics', icon: '📈' },
+              { id: 'realtime', name: 'Real-time Analytics', icon: '⚡' },
               { id: 'costs', name: 'Cost Management', icon: '💰' }
             ].map((tab) => (
               <button
@@ -308,39 +310,39 @@ function AdminDashboard({ onBack, userProfile }) {
 
         {/* Users Tab */}
         {selectedTab === 'users' && (
-          <div className="space-y-6">
-            {/* Search */}
-            <div className="bg-gray-800 rounded-xl p-6 border border-gray-700">
-              <div className="flex flex-col md:flex-row gap-4">
+          <div className="space-y-3">
+            {/* Compact Header with Search */}
+            <div className="bg-gray-800 rounded-lg p-3 border border-gray-700">
+              <div className="flex items-center gap-4">
+                <h3 className="text-lg font-bold text-white whitespace-nowrap">User Management</h3>
                 <div className="flex-1">
                   <input
                     type="text"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    placeholder="Search users by email, name, or ID..."
-                    className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Search users..."
+                    className="w-full px-3 py-1.5 bg-gray-700 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 text-sm"
                   />
                 </div>
-                <div className="text-gray-400 text-sm self-center">
-                  {filteredUsers.length} users found
+                <div className="text-gray-400 text-sm whitespace-nowrap">
+                  {filteredUsers.length} users
                 </div>
               </div>
             </div>
 
             {/* User List */}
-            <div className="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
-              <div className="p-6 border-b border-gray-700">
-                <h3 className="text-xl font-bold text-white">User Management</h3>
-              </div>
+            <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden">
               
               {loading ? (
                 <div className="p-8 text-center text-gray-400">Loading users...</div>
               ) : filteredUsers.length === 0 ? (
                 <div className="p-8 text-center text-gray-400">No users found</div>
               ) : (
-                <div className="divide-y divide-gray-700 max-h-96 overflow-y-auto">
-                  {filteredUsers.map((user) => (
-                    <div key={user.id} className="p-4 hover:bg-gray-750 transition-colors">
+                <div className="divide-y divide-gray-700 max-h-[calc(100vh-280px)] overflow-y-auto">
+                  {filteredUsers.map((user, index) => (
+                    <div key={user.id} className={`p-4 hover:bg-gray-750 transition-colors ${
+                      index === filteredUsers.length - 1 ? 'mb-8' : ''
+                    }`}>
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
                           <div className="font-medium text-white truncate">
@@ -395,6 +397,13 @@ function AdminDashboard({ onBack, userProfile }) {
                 </div>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* Real-time Analytics Tab */}
+        {selectedTab === 'realtime' && (
+          <div className="space-y-6">
+            <AnalyticsDashboard />
           </div>
         )}
 
