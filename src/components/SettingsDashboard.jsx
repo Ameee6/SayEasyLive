@@ -13,6 +13,11 @@ import SaveSettingsModal from './SaveSettingsModal';
  * - Backend image upload: Store images on server instead of IndexedDB for cross-device access
  * - Multi-device login: Allow users to sync settings and cards across devices
  * Note: These features are planned for a future release and are not implemented in this version.
+ * 
+ * TUTORIAL SYSTEM REMOVED (2024-12-10):
+ * - Previous modal-based tutorial had React hooks ordering violations causing white screen crashes
+ * - Removed Tutorial.jsx, tutorial utils, and all related code
+ * - Future tutorial will use overlay/highlighting approach instead of modals
  */
 
 // Color palette for scroll cards (matching MainView)
@@ -47,7 +52,7 @@ const MAIN_BUTTON_IDS = ['main-top', 'main-bottom'];
 // Helper function to check if a card ID belongs to a card (custom or preset)
 const isCardId = (id) => id.startsWith(CARD_ID_PREFIX) || id.startsWith(PRESET_ID_PREFIX);
 
-function SettingsDashboard({ onSave, onBack, onShowSignup, userProfile, userTier }) {
+function SettingsDashboard({ onSave, onBack, onShowSignup, userProfile, userTier, onNavigateToContact }) {
   const [settings, setSettings] = useState(loadDashboardSettings());
   const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [images, setImages] = useState({});
@@ -61,6 +66,8 @@ function SettingsDashboard({ onSave, onBack, onShowSignup, userProfile, userTier
   const [showTrialModal, setShowTrialModal] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [draggedIndex, setDraggedIndex] = useState(null);
+  const [showTutorial, setShowTutorial] = useState(false);
+  const [tutorialButtonAnimated, setTutorialButtonAnimated] = useState(false);
   
   const fileInputRef = useRef(null);
   const currentUploadTarget = useRef(null);
@@ -74,6 +81,17 @@ function SettingsDashboard({ onSave, onBack, onShowSignup, userProfile, userTier
     window.addEventListener('resize', checkPortrait);
     return () => window.removeEventListener('resize', checkPortrait);
   }, []);
+
+  // Tutorial button animation sequence: flash orange 3 times, then pulse 3 times, then stop
+  useEffect(() => {
+    if (!tutorialButtonAnimated && !showTutorial) {
+      const timer = setTimeout(() => {
+        setTutorialButtonAnimated(true);
+      }, 6000); // Flash 3 times (1.5s) + pulse 3 times (4.5s) = 6s total
+      
+      return () => clearTimeout(timer);
+    }
+  }, [tutorialButtonAnimated, showTutorial]);
 
   // Load settings from Firestore if user is logged in
   useEffect(() => {
@@ -114,6 +132,7 @@ function SettingsDashboard({ onSave, onBack, onShowSignup, userProfile, userTier
     };
     loadImages();
   }, []);
+
 
   // Get preset cards that are not currently in the scroll cards list
   const getAvailablePresetCards = () => {
@@ -501,6 +520,17 @@ function SettingsDashboard({ onSave, onBack, onShowSignup, userProfile, userTier
     return <span className={fontSize}>{item.emoji}</span>;
   };
 
+
+  const handleOpenContact = () => {
+    if (onNavigateToContact) {
+      onNavigateToContact();
+    }
+  };
+
+  const handleTutorialToggle = () => {
+    setShowTutorial(!showTutorial);
+  };
+
   return (
     <div className="min-h-screen bg-gray-900 text-white flex flex-col scrollable-page">
       {/* Hidden file input - no capture attribute to allow both gallery and camera on mobile */}
@@ -599,12 +629,34 @@ function SettingsDashboard({ onSave, onBack, onShowSignup, userProfile, userTier
       <div className="flex flex-col md:flex-row flex-1 md:overflow-hidden">
         {/* Left: Live Preview Panel - Hidden on mobile to prioritize editing */}
         <div className="hidden md:flex flex-1 flex-col p-4 overflow-auto">
-          <h2 className="text-xl font-semibold mb-4 text-center">Live Preview</h2>
+          <div className="flex items-center justify-center mb-4 relative">
+            <h2 className="text-xl font-semibold">Live Preview</h2>
+            <button
+              onClick={handleTutorialToggle}
+              className={`ml-3 px-3 py-1 text-sm rounded-lg transition-colors ${
+                showTutorial 
+                  ? 'bg-orange-600 hover:bg-orange-500 text-white' 
+                  : tutorialButtonAnimated 
+                    ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                    : 'bg-gray-700 hover:bg-gray-600 text-gray-300 animate-pulse'
+              }`}
+              style={
+                !showTutorial && !tutorialButtonAnimated
+                  ? {
+                      animation: 'flash-orange 1.5s ease-in-out 0s, pulse 1.5s ease-in-out 1.5s 3'
+                    }
+                  : undefined
+              }
+              title={showTutorial ? 'Hide tutorial' : 'Show tutorial'}
+            >
+              Tutorial
+            </button>
+          </div>
           
           {/* Preview layout mimicking main app */}
           <div className="flex flex-1 bg-gray-800 rounded-lg overflow-hidden border-2 border-gray-600">
             {/* Left side - Main buttons */}
-            <div className="w-1/3 flex flex-col items-center justify-around p-4 bg-gray-900 border-r-2 border-gray-600">
+            <div className="w-1/3 flex flex-col items-center justify-around p-4 bg-gray-900 border-r-2 border-gray-600 ">
               {/* Top main button (Yes/More) */}
               <EditableButton
                 item={settings.mainButtons.top}
@@ -616,10 +668,32 @@ function SettingsDashboard({ onSave, onBack, onShowSignup, userProfile, userTier
                 renderContent={renderButtonContent}
               />
               
-              {/* Instructional text between buttons */}
-              <p className="text-xs text-gray-400 text-center px-2 py-2 max-w-[140px]">
-                Edit text/images by clicking on the text or images.
-              </p>
+              {/* Instructional text between buttons - shows as speech bubble when tutorial is active */}
+              {showTutorial ? (
+                <div className="relative z-10 max-w-[200px] mx-auto">
+                  {/* Speech bubble */}
+                  <div className="bg-white text-black text-sm px-4 py-3 rounded-lg border-2 border-black shadow-lg relative">
+                    {/* Arrow pointing up */}
+                    <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 mb-2">
+                      <div className="text-black text-xl font-bold">↑</div>
+                    </div>
+                    
+                    {/* Main text */}
+                    <div className="text-center font-medium mb-2">
+                      Edit text/images by clicking on the text or images.
+                    </div>
+                    
+                    {/* Arrow pointing down */}
+                    <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 mt-2">
+                      <div className="text-black text-xl font-bold">↓</div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400 text-center px-2 py-2 max-w-[140px]">
+                  Edit text/images by clicking on the text or images.
+                </p>
+              )}
               
               {/* Bottom main button (No/All Done) */}
               <EditableButton
@@ -685,7 +759,7 @@ function SettingsDashboard({ onSave, onBack, onShowSignup, userProfile, userTier
         {/* Right: Edit Panel - Full width on mobile, sidebar on larger screens */}
         <div className="w-full md:w-96 bg-gray-800 md:border-l border-gray-600 flex flex-col">
           {/* Main Buttons Section - Mobile only */}
-          <div className="md:hidden p-4 border-b border-gray-600">
+          <div className="md:hidden p-4 border-b border-gray-600 ">
             <h3 className="text-lg font-semibold mb-3">Main Buttons</h3>
             <div className="flex justify-around items-center">
               <EditableButton
@@ -710,19 +784,35 @@ function SettingsDashboard({ onSave, onBack, onShowSignup, userProfile, userTier
           </div>
 
           {/* Scroll cards editor */}
-          <div className="flex-1 p-4 md:overflow-y-auto">
+          <div className="flex-1 p-4 md:overflow-y-auto ">
             <div className="flex justify-between items-center mb-3">
               <h3 className="text-lg font-semibold">Edit Scroll Cards</h3>
               {settings.scrollCards.length < 10 && (
-                <button
-                  onClick={addCard}
-                  className="px-3 py-1 bg-green-600 rounded hover:bg-green-500 text-sm"
-                >
-                  {userTier?.tier === 'free' 
-                    ? `+ Add Custom Scroll Card (${settings.scrollCards.filter(c => !c.isPreset).length}/${userTier.customScrollCardLimit || 0} allowed)` 
-                    : `+ Add Custom Scroll Card (${settings.scrollCards.filter(c => !c.isPreset).length}/10)`
-                  }
-                </button>
+                <div className="relative">
+                  <button
+                    onClick={addCard}
+                    className="px-3 py-1 bg-green-600 rounded hover:bg-green-500 text-sm"
+                  >
+                    {userTier?.tier === 'free' 
+                      ? `+ Add Custom Scroll Card (${settings.scrollCards.filter(c => !c.isPreset).length}/${userTier.customScrollCardLimit || 0} allowed)` 
+                      : `+ Add Custom Scroll Card (${settings.scrollCards.filter(c => !c.isPreset).length}/10)`
+                    }
+                  </button>
+                  {showTutorial && (
+                    <div className="absolute top-12 right-0 z-10">
+                      {/* Speech bubble for custom cards - positioned below the button */}
+                      <div className="bg-white text-black text-sm px-4 py-3 rounded-lg border-2 border-black shadow-lg relative max-w-[280px]">
+                        {/* Arrow pointing up to the button */}
+                        <div className="absolute -top-2 right-12">
+                          <div className="text-black text-lg font-bold">↑</div>
+                        </div>
+                        <div className="text-center font-medium">
+                          Try our free two week trial or subscribe for $12.99/year to customize more cards here
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
 
@@ -737,13 +827,36 @@ function SettingsDashboard({ onSave, onBack, onShowSignup, userProfile, userTier
             {/* Preset Cards Dropdown */}
             {getAvailablePresetCards().length > 0 && settings.scrollCards.length < 10 && (
               <div className="mb-4">
-                <button
-                  onClick={() => setShowPresetCards(!showPresetCards)}
-                  className="flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-2 font-medium"
-                >
-                  <span>{showPresetCards ? '▼' : '▶'}</span>
-                  <span>Preset Cards ({getAvailablePresetCards().length} available)</span>
-                </button>
+                {showTutorial ? (
+                  <div className="relative mb-2">
+                    {/* Original button at the top */}
+                    <button
+                      onClick={() => setShowPresetCards(!showPresetCards)}
+                      className="flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-2 font-medium"
+                    >
+                      <span>{showPresetCards ? '▼' : '▶'}</span>
+                      <span>Preset Cards ({getAvailablePresetCards().length} available)</span>
+                    </button>
+                    {/* Speech bubble for preset cards below the button */}
+                    <div className="bg-white text-black text-sm px-4 py-3 rounded-lg border-2 border-black shadow-lg relative">
+                      {/* Arrow pointing up to the button */}
+                      <div className="absolute -top-2 left-1/2 transform -translate-x-1/2">
+                        <div className="text-black text-lg font-bold">↑</div>
+                      </div>
+                      <div className="text-center font-medium">
+                        Add up to 10 preset cards for free
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setShowPresetCards(!showPresetCards)}
+                    className="flex items-center gap-2 text-blue-400 hover:text-blue-300 mb-2 font-medium "
+                  >
+                    <span>{showPresetCards ? '▼' : '▶'}</span>
+                    <span>Preset Cards ({getAvailablePresetCards().length} available)</span>
+                  </button>
+                )}
                 
                 {showPresetCards && (
                   <div className="space-y-2 ml-4 bg-gray-700/50 rounded-lg p-3">
@@ -915,6 +1028,7 @@ function SettingsDashboard({ onSave, onBack, onShowSignup, userProfile, userTier
           onStayLocal={handleStayLocal}
         />
       )}
+
 
       {/* Footer */}
       <footer className="bg-gray-900 border-t border-gray-700 py-4 px-6 flex-shrink-0">
